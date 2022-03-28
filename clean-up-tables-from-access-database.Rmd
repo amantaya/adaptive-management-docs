@@ -1,0 +1,27 @@
+---
+title: "clean-up-tables-from-access-database"
+author: "Cameron Burleson"
+date: "3/28/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r load sheet 1}
+t_e_limits_df <- openxlsx::read.xlsx("data/adaptive_management_documents_asessment_export_all_tables_from_access.xlsx", sheet = "tblTnELimits_Doc")
+
+t_e_limits_df$Date.Entered <- openxlsx::convertToDate(t_e_limits_df$Date.Entered)
+
+t_e_limits_df
+```
+
+```{r load sheet 2}
+t_e_docs_df <- openxlsx::read.xlsx("data/adaptive_management_documents_asessment_export_all_tables_from_access.xlsx", sheet = "tblTnE_Doc")
+
+t_e_docs_df$Date.Entered <- openxlsx::convertToDate(t_e_docs_df$Date.Entered)
+
+t_e_docs_df
+```
+
