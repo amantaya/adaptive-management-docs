@@ -203,7 +203,13 @@ all_excel_sheets_cleaned_allot_specs_table$tblDocSpecs
 ```
 
 ```{r}
+all_excel_sheets_cleaned_allot_specs_table$tblDocSpecs <- 
+  all_excel_sheets_cleaned_allot_specs_table$tblDocSpecs %>% dplyr::arrange(DocNo)
+```
 
+
+```{r}
+openxlsx::write.xlsx(all_excel_sheets_cleaned_allot_specs_table, "data/intermediate-clean-excel-dates-and-join-docyear-on-table-docspecs.xlsx")
 ```
 
 
