@@ -16,11 +16,11 @@
 #' **Output:** It returns a date frame with the "Date.Entered" column converted \
 #' from a Excel date to date in the S3 date class.
 
-convert_from_excel_dates_to_datetime <- function(df){
+convert_from_excel_dates_to_datetime <- function(df, col_name){
   # first check if the data frame has a "Date.Entered" column
-  if (any(names(df) == "Date.Entered")) {
-  # select only the "Date.Entered" column and pipe that into openxlsx to convert to correct date format for R  
-    df$Date.Entered <- df %>% dplyr::pull("Date.Entered") %>% openxlsx::convertToDate()
+  if (any(names(df) == col_name)) {
+  # select only the "Date.Entered" column and pipe that into openxlsx to convert to correct date format for R
+    df[col_name] <- df %>% dplyr::pull(col_name) %>% openxlsx::convertToDateTime()
   # return the cleaned data frame  
     return(df)
   }
