@@ -48,31 +48,30 @@ all_excel_sheets_list <- lapply(sheet_names, openxlsx::read.xlsx, xlsxFile = pat
 all_excel_sheets_list
 ```
 
-```{r}
-df <- all_excel_sheets_list[[1]]
-
-df
-```
-
+The "convert_from_excel_dates_to_datetime" function now uses a column name parameter that performs the clean up function on an column in the data frame that matches the column name supplied in the function paramter.
 
 ```{r}
-names(df)
+names(all_excel_sheets_list) <- sheet_names
+
+names(all_excel_sheets_list)
 ```
 
 ```{r}
-any(names(df) == "Date.Entered")
+all_excel_sheets_list$tblTnELimits_Doc
 ```
 
 ```{r}
-convert_from_excel_dates_to_datetime(df)
+df <- all_excel_sheets_list$tblTnELimits_Doc
 
-print(df)
+convert_from_excel_dates_to_datetime(df, "Date.Entered")
 ```
+
+
 
 ```{r map custom clean dates fucntion to list of data frames}
-all_excel_sheets_cleaned_entered_dates_list <- purrr::map(all_excel_sheets_list, convert_from_excel_dates_to_datetime)
-
-print(all_excel_sheets_cleaned_entered_dates_list)
+all_excel_sheets_cleaned_date_entered <- purrr::map(all_excel_sheets_list,
+                                                    convert_from_excel_dates_to_datetime,
+                                                    col_name = "Date.Entered")
 ```
 
 The "CodingDate" column means exactly the same as "Date.Entered" and we can rename that column to be the same thing. Then we could run our function on the previously names "CodingDate" column.
@@ -82,6 +81,131 @@ The "DateOn" and "DateOff" columns are the dates that cows were turned out onto 
 In the "DocSpecs" data frame the "DocYear" column was coded in using a table of codes from the dmnSpecs
 
 We want to keep only these tables from the Access database.
+
+Rename each element in the list by the name of the Excel sheet.
+
+
+```{r}
+all_excel_sheets_cleaned_dateon <- purrr::map(all_excel_sheets_cleaned_date_entered,
+                                                convert_from_excel_dates_to_datetime,
+                                                col_name = "DateOn")
+```
+
+```{r}
+all_excel_sheets_cleaned_dateoff <- purrr::map(all_excel_sheets_cleaned_dateon,
+                                                convert_from_excel_dates_to_datetime,
+                                                col_name = "DateOff")
+```
+
+```{r}
+all_excel_sheets_cleaned_dateoff <- purrr::map(all_excel_sheets_cleaned_dateon,
+                                                convert_from_excel_dates_to_datetime,
+                                                col_name = "DateOff")
+```
+
+```{r}
+names(all_excel_sheets_cleaned_dateoff$tblDocSpecs)
+```
+
+
+```{r}
+all_excel_sheets_cleaned_coding_date <- purrr::map(all_excel_sheets_cleaned_dateoff,
+                                                convert_from_excel_dates_to_datetime,
+                                                col_name = "CodingDate")
+```
+
+The datetimes below are in the wrong time zone. They are displaying in the UTC time zone, but the data was actually entered in with GMT -7 time zone. 
+
+```{r}
+all_excel_sheets_cleaned_coding_date$tblDocSpecs$CodingDate %>% lubridate::date()
+```
+
+```{r}
+names(all_excel_sheets_cleaned_coding_date$tblAmendSpecs)
+```
+
+
+```{r}
+all_excel_sheets_cleaned_datdate_entered <- purrr::map(all_excel_sheets_cleaned_coding_date,
+                                                convert_from_excel_dates_to_datetime,
+                                                col_name = "datDate.Entered")
+```
+
+
+```{r}
+all_excel_sheets_cleaned_datdate_entered$tblAmendSpecs
+```
+
+```{r}
+names(all_excel_sheets_cleaned_datdate_entered$tblAllotSpecs)
+```
+
+```{r}
+all_excel_sheets_cleaned_allot_specs_table <- purrr::map(all_excel_sheets_cleaned_datdate_entered,
+                                                convert_from_excel_dates_to_datetime,
+                                                col_name = "datValidStart")
+
+all_excel_sheets_cleaned_allot_specs_table <- purrr::map(all_excel_sheets_cleaned_allot_specs_table,
+                                                convert_from_excel_dates_to_datetime,
+                                                col_name = "datValidEnd")
+
+all_excel_sheets_cleaned_allot_specs_table <- purrr::map(all_excel_sheets_cleaned_allot_specs_table,
+                                                convert_from_excel_dates_to_datetime,
+                                                col_name = "datPermitStart")
+
+all_excel_sheets_cleaned_allot_specs_table <- purrr::map(all_excel_sheets_cleaned_allot_specs_table,
+                                                convert_from_excel_dates_to_datetime,
+                                                col_name = "datPermitEnd")
+
+all_excel_sheets_cleaned_allot_specs_table <- purrr::map(all_excel_sheets_cleaned_allot_specs_table,
+                                                convert_from_excel_dates_to_datetime,
+                                                col_name = "DateEntered")
+```
+
+```{r}
+all_excel_sheets_cleaned_allot_specs_table$dmnYears
+
+all_excel_sheets_cleaned_allot_specs_table$tblDocSpecs
+```
+
+```{r}
+all_excel_sheets_cleaned_allot_specs_table$dmnYears <- all_excel_sheets_cleaned_allot_specs_table$dmnYears %>% dplyr::rename(DocYear = ID)
+
+all_excel_sheets_cleaned_allot_specs_table$dmnYears
+```
+
+The table "dmnYears" contains a code for entering in the document year in the "DocYear" column. Year 1996 is coded as "7". The "tblDocSpecs" contains only a "DocYear" column so we want to replace those coded values with the actual year of the document.
+
+```{r}
+# match the DocYear value from the "dmnYears" data frame with 
+# the DocYear value in the "tblDocSpecs" data frame
+# and replace the "DocYear" value in the "tblDocSpecs" data 
+# with the "Date_Year" from the "dmnYEars"
+
+all_excel_sheets_cleaned_allot_specs_table$tblDocSpecs <- dplyr::right_join(all_excel_sheets_cleaned_allot_specs_table$dmnYears, all_excel_sheets_cleaned_allot_specs_table$tblDocSpecs, by = "DocYear")
+
+all_excel_sheets_cleaned_allot_specs_table$tblDocSpecs
+```
+
+We will drop the "DocYear" column from the "tblDocSpecs" data frame, and then rename the "Date_Year" column to be called "AOI_Year". 
+
+```{r}
+all_excel_sheets_cleaned_allot_specs_table$tblDocSpecs <- 
+  all_excel_sheets_cleaned_allot_specs_table$tblDocSpecs %>% 
+  dplyr::select(-(DocYear))
+```
+
+```{r}
+all_excel_sheets_cleaned_allot_specs_table$tblDocSpecs <- 
+all_excel_sheets_cleaned_allot_specs_table$tblDocSpecs %>% rename(AOI_Year = Date_Year)
+
+all_excel_sheets_cleaned_allot_specs_table$tblDocSpecs
+```
+
+```{r}
+
+```
+
 
 ```{r}
 # tblAllotSpecs
