@@ -70,8 +70,9 @@ convert_from_excel_dates_to_datetime(df, "Date.Entered")
 
 ```{r map custom clean dates fucntion to list of data frames}
 all_excel_sheets_cleaned_date_entered <- purrr::map(all_excel_sheets_list,
-                                                    convert_from_excel_dates_to_datetime,
-                                                    col_name = "Date.Entered")
+  convert_from_excel_dates_to_datetime,
+  col_name = "Date.Entered"
+)
 ```
 
 The "CodingDate" column means exactly the same as "Date.Entered" and we can rename that column to be the same thing. Then we could run our function on the previously names "CodingDate" column.
@@ -87,20 +88,23 @@ Rename each element in the list by the name of the Excel sheet.
 
 ```{r}
 all_excel_sheets_cleaned_dateon <- purrr::map(all_excel_sheets_cleaned_date_entered,
-                                                convert_from_excel_dates_to_datetime,
-                                                col_name = "DateOn")
+  convert_from_excel_dates_to_datetime,
+  col_name = "DateOn"
+)
 ```
 
 ```{r}
 all_excel_sheets_cleaned_dateoff <- purrr::map(all_excel_sheets_cleaned_dateon,
-                                                convert_from_excel_dates_to_datetime,
-                                                col_name = "DateOff")
+  convert_from_excel_dates_to_datetime,
+  col_name = "DateOff"
+)
 ```
 
 ```{r}
 all_excel_sheets_cleaned_dateoff <- purrr::map(all_excel_sheets_cleaned_dateon,
-                                                convert_from_excel_dates_to_datetime,
-                                                col_name = "DateOff")
+  convert_from_excel_dates_to_datetime,
+  col_name = "DateOff"
+)
 ```
 
 ```{r}
@@ -110,8 +114,9 @@ names(all_excel_sheets_cleaned_dateoff$tblDocSpecs)
 
 ```{r}
 all_excel_sheets_cleaned_coding_date <- purrr::map(all_excel_sheets_cleaned_dateoff,
-                                                convert_from_excel_dates_to_datetime,
-                                                col_name = "CodingDate")
+  convert_from_excel_dates_to_datetime,
+  col_name = "CodingDate"
+)
 ```
 
 The datetimes below are in the wrong time zone. They are displaying in the UTC time zone, but the data was actually entered in with GMT -7 time zone. 
@@ -123,8 +128,9 @@ names(all_excel_sheets_cleaned_coding_date$tblAmendSpecs)
 
 ```{r}
 all_excel_sheets_cleaned_datdate_entered <- purrr::map(all_excel_sheets_cleaned_coding_date,
-                                                convert_from_excel_dates_to_datetime,
-                                                col_name = "datDate.Entered")
+  convert_from_excel_dates_to_datetime,
+  col_name = "datDate.Entered"
+)
 ```
 
 
@@ -138,24 +144,29 @@ names(all_excel_sheets_cleaned_datdate_entered$tblAllotSpecs)
 
 ```{r}
 all_excel_sheets_cleaned_allot_specs_table <- purrr::map(all_excel_sheets_cleaned_datdate_entered,
-                                                convert_from_excel_dates_to_datetime,
-                                                col_name = "datValidStart")
+  convert_from_excel_dates_to_datetime,
+  col_name = "datValidStart"
+)
 
 all_excel_sheets_cleaned_allot_specs_table <- purrr::map(all_excel_sheets_cleaned_allot_specs_table,
-                                                convert_from_excel_dates_to_datetime,
-                                                col_name = "datValidEnd")
+  convert_from_excel_dates_to_datetime,
+  col_name = "datValidEnd"
+)
 
 all_excel_sheets_cleaned_allot_specs_table <- purrr::map(all_excel_sheets_cleaned_allot_specs_table,
-                                                convert_from_excel_dates_to_datetime,
-                                                col_name = "datPermitStart")
+  convert_from_excel_dates_to_datetime,
+  col_name = "datPermitStart"
+)
 
 all_excel_sheets_cleaned_allot_specs_table <- purrr::map(all_excel_sheets_cleaned_allot_specs_table,
-                                                convert_from_excel_dates_to_datetime,
-                                                col_name = "datPermitEnd")
+  convert_from_excel_dates_to_datetime,
+  col_name = "datPermitEnd"
+)
 
 all_excel_sheets_cleaned_allot_specs_table <- purrr::map(all_excel_sheets_cleaned_allot_specs_table,
-                                                convert_from_excel_dates_to_datetime,
-                                                col_name = "DateEntered")
+  convert_from_excel_dates_to_datetime,
+  col_name = "DateEntered"
+)
 ```
 
 ```{r}
@@ -173,9 +184,9 @@ all_excel_sheets_cleaned_allot_specs_table$dmnYears
 The table "dmnYears" contains a code for entering in the document year in the "DocYear" column. Year 1996 is coded as "7". The "tblDocSpecs" contains only a "DocYear" column so we want to replace those coded values with the actual year of the document.
 
 ```{r}
-# match the DocYear value from the "dmnYears" data frame with 
+# match the DocYear value from the "dmnYears" data frame with
 # the DocYear value in the "tblDocSpecs" data frame
-# and replace the "DocYear" value in the "tblDocSpecs" data 
+# and replace the "DocYear" value in the "tblDocSpecs" data
 # with the "Date_Year" from the "dmnYEars"
 
 all_excel_sheets_cleaned_allot_specs_table$tblDocSpecs <- dplyr::right_join(all_excel_sheets_cleaned_allot_specs_table$dmnYears, all_excel_sheets_cleaned_allot_specs_table$tblDocSpecs, by = "DocYear")
@@ -186,20 +197,20 @@ all_excel_sheets_cleaned_allot_specs_table$tblDocSpecs
 We will drop the "DocYear" column from the "tblDocSpecs" data frame, and then rename the "Date_Year" column to be called "AOI_Year". 
 
 ```{r}
-all_excel_sheets_cleaned_allot_specs_table$tblDocSpecs <- 
-  all_excel_sheets_cleaned_allot_specs_table$tblDocSpecs %>% 
+all_excel_sheets_cleaned_allot_specs_table$tblDocSpecs <-
+  all_excel_sheets_cleaned_allot_specs_table$tblDocSpecs %>%
   dplyr::select(-(DocYear))
 ```
 
 ```{r}
-all_excel_sheets_cleaned_allot_specs_table$tblDocSpecs <- 
-all_excel_sheets_cleaned_allot_specs_table$tblDocSpecs %>% rename(AOI_Year = Date_Year)
+all_excel_sheets_cleaned_allot_specs_table$tblDocSpecs <-
+  all_excel_sheets_cleaned_allot_specs_table$tblDocSpecs %>% rename(AOI_Year = Date_Year)
 
 all_excel_sheets_cleaned_allot_specs_table$tblDocSpecs
 ```
 
 ```{r}
-all_excel_sheets_cleaned_allot_specs_table$tblDocSpecs <- 
+all_excel_sheets_cleaned_allot_specs_table$tblDocSpecs <-
   all_excel_sheets_cleaned_allot_specs_table$tblDocSpecs %>% dplyr::arrange(DocNo)
 
 all_excel_sheets_cleaned_allot_specs_table
@@ -228,8 +239,9 @@ Join the "tblTnELimits_Doc" with the "tblDocSpecs" on the "DocNo" column.
 
 ```{r}
 dplyr::semi_join(all_excel_sheets_cleaned$tblDocSpecs,
-                 all_excel_sheets_cleaned$tblTnELimits_Doc,
-                 by = "DocNo")
+  all_excel_sheets_cleaned$tblTnELimits_Doc,
+  by = "DocNo"
+)
 ```
 
 ```{r}
@@ -238,14 +250,15 @@ all_excel_sheets_cleaned$tblTnELimits_Doc
 
 
 ```{r}
-all_excel_sheets_cleaned$tblTnELimits_Doc <- 
+all_excel_sheets_cleaned$tblTnELimits_Doc <-
   all_excel_sheets_cleaned$tblTnELimits_Doc %>%
   dplyr::select(Limitation, DocNo)
 
 all_excel_sheets_cleaned_right_join <- all_excel_sheets_cleaned
 
-all_excel_sheets_cleaned_right_join$tblDocSpecs <- dplyr::right_join(all_excel_sheets_cleaned_right_join$tblDocSpecs,                                                  all_excel_sheets_cleaned_right_join$tblTnELimits_Doc,
-                  by = "DocNo")
+all_excel_sheets_cleaned_right_join$tblDocSpecs <- dplyr::right_join(all_excel_sheets_cleaned_right_join$tblDocSpecs, all_excel_sheets_cleaned_right_join$tblTnELimits_Doc,
+  by = "DocNo"
+)
 
 all_excel_sheets_cleaned_right_join$tblDocSpecs
 ```
@@ -254,10 +267,11 @@ all_excel_sheets_cleaned_right_join$tblDocSpecs
 ```{r}
 all_excel_sheets_cleaned_full_join <- all_excel_sheets_cleaned
 
-all_excel_sheets_cleaned_full_join$tblDocSpecs <- 
+all_excel_sheets_cleaned_full_join$tblDocSpecs <-
   dplyr::full_join(all_excel_sheets_cleaned$tblDocSpecs,
-                   all_excel_sheets_cleaned$tblTnELimits_Doc, 
-                   by = "DocNo")
+    all_excel_sheets_cleaned$tblTnELimits_Doc,
+    by = "DocNo"
+  )
 
 all_excel_sheets_cleaned_full_join$tblDocSpecs
 ```
@@ -265,17 +279,19 @@ all_excel_sheets_cleaned_full_join$tblDocSpecs
 The anti join is telling us that there are 58 additional rows in the full join that did not match.
 
 ```{r}
-anti_join(all_excel_sheets_cleaned_full_join$tblDocSpecs,
-          all_excel_sheets_cleaned_right_join$tblDocSpecs)
+anti_join(
+  all_excel_sheets_cleaned_full_join$tblDocSpecs,
+  all_excel_sheets_cleaned_right_join$tblDocSpecs
+)
 ```
 
 When we joined, the column "DocNo" in the sheet "tblDocSpecs" the new data was added 
 
 ```{r}
-all_excel_sheets_cleaned_full_join_arrange <- 
+all_excel_sheets_cleaned_full_join_arrange <-
   all_excel_sheets_cleaned_full_join
 
-all_excel_sheets_cleaned_full_join_arrange$tblDocSpecs <- all_excel_sheets_cleaned_full_join$tblDocSpecs %>% 
+all_excel_sheets_cleaned_full_join_arrange$tblDocSpecs <- all_excel_sheets_cleaned_full_join$tblDocSpecs %>%
   arrange(DocNo)
 
 print(all_excel_sheets_cleaned_full_join_arrange$tblDocSpecs)
@@ -284,7 +300,7 @@ print(all_excel_sheets_cleaned_full_join_arrange$tblDocSpecs)
 We might decide to replace the "N/A" values are true NA values, but for now, let's replace "N/A" with "None"
 ```{r}
 # all_excel_sheets_cleaned_full_join_arrange$tblDocSpecs$Limitation <- str_replace_all(all_excel_sheets_cleaned_full_join_arrange$tblDocSpecs$Limitation, "N/A", NA_character_)
-# 
+#
 # View(all_excel_sheets_cleaned_full_join_arrange$tblDocSpecs)
 ```
 
@@ -292,9 +308,11 @@ The limitation column represents limitations placed on each allotment related to
 
 ```{r}
 all_excel_sheets_cleaned_full_join_arrange$tblDocSpecs$Limitation <-
-  str_replace_all(all_excel_sheets_cleaned_full_join_arrange$tblDocSpecs$Limitation, 
-                  "N/A", 
-                  "None")
+  str_replace_all(
+    all_excel_sheets_cleaned_full_join_arrange$tblDocSpecs$Limitation,
+    "N/A",
+    "None"
+  )
 
 all_excel_sheets_cleaned_full_join_arrange$tblDocSpecs
 ```
@@ -302,8 +320,10 @@ all_excel_sheets_cleaned_full_join_arrange$tblDocSpecs
 ### Write Partially Cleaned Data Step 02
 
 ```{r}
-openxlsx::write.xlsx(all_excel_sheets_cleaned_full_join_arrange, 
-                     file.path("data", "02-intermediate-full-join-limitations-doc-specs.xlsx"))
+openxlsx::write.xlsx(
+  all_excel_sheets_cleaned_full_join_arrange,
+  file.path("data", "02-intermediate-full-join-limitations-doc-specs.xlsx")
+)
 ```
 
 ## Step 03
@@ -317,7 +337,7 @@ all_excel_sheets_drop_duplicate_common_names <- all_excel_sheets_cleaned_full_jo
 
 all_excel_sheets_drop_duplicate_common_names$tblTnE_Doc <-
   all_excel_sheets_cleaned_full_join_arrange$tblTnE_Doc %>%
-  group_by(DocNo) %>% 
+  group_by(DocNo) %>%
   dplyr::distinct(CommonName)
 
 all_excel_sheets_drop_duplicate_common_names$tblTnE_Doc
@@ -336,8 +356,10 @@ full - drop_dupl
 ### Write Intermediate Data to CSV Step 03
 
 ```{r}
-openxlsx::write.xlsx(all_excel_sheets_drop_duplicate_common_names,
-                     file.path("data", "03-intermediate-drop-duplicate-common-names-tnedoc.xlsx"))
+openxlsx::write.xlsx(
+  all_excel_sheets_drop_duplicate_common_names,
+  file.path("data", "03-intermediate-drop-duplicate-common-names-tnedoc.xlsx")
+)
 ```
 
 ## Step 04
@@ -353,21 +375,21 @@ all_excel_sheets_drop_duplicate_common_names$tblTnE_Doc %>% dplyr::group_size()
 ```
 
 ```{r}
-all_excel_sheets_drop_duplicate_common_names$tblTnE_Doc %>% 
-  pull(CommonName) %>% 
+all_excel_sheets_drop_duplicate_common_names$tblTnE_Doc %>%
+  pull(CommonName) %>%
   unique()
 ```
 
 ```{r}
-all_excel_sheets_drop_duplicate_common_names$tblTnE_Doc %>% 
+all_excel_sheets_drop_duplicate_common_names$tblTnE_Doc %>%
   dplyr::pull(CommonName) %>%
-  stringr::str_trim() %>% 
+  stringr::str_trim() %>%
   unique()
 ```
 
 ```{r}
-all_excel_sheets_drop_duplicate_common_names$tblTnE_Doc$CommonName <- 
-all_excel_sheets_drop_duplicate_common_names$tblTnE_Doc %>% 
+all_excel_sheets_drop_duplicate_common_names$tblTnE_Doc$CommonName <-
+  all_excel_sheets_drop_duplicate_common_names$tblTnE_Doc %>%
   dplyr::pull(CommonName) %>%
   stringr::str_trim()
 print(all_excel_sheets_drop_duplicate_common_names$tblTnE_Doc)
@@ -376,9 +398,13 @@ print(all_excel_sheets_drop_duplicate_common_names$tblTnE_Doc)
 ### Write Partially Cleaned Data to CSV Step 04
 
 ```{r}
-openxlsx::write.xlsx(all_excel_sheets_drop_duplicate_common_names, 
-                     file.path("data",
-                               "04-intermediate-remove-leading-whitespaces-from-tblTnE_Doc.xlsx"))
+openxlsx::write.xlsx(
+  all_excel_sheets_drop_duplicate_common_names,
+  file.path(
+    "data",
+    "04-intermediate-remove-leading-whitespaces-from-tblTnE_Doc.xlsx"
+  )
+)
 ```
 
 
@@ -387,8 +413,8 @@ openxlsx::write.xlsx(all_excel_sheets_drop_duplicate_common_names,
 Collapse each common name from tblTnE_Doc into single column.
 
 ```{r}
-all_excel_sheets_drop_duplicate_common_names$tblTnE_Doc_collapse <- 
-all_excel_sheets_drop_duplicate_common_names$tblTnE_Doc %>% 
+all_excel_sheets_drop_duplicate_common_names$tblTnE_Doc_collapse <-
+  all_excel_sheets_drop_duplicate_common_names$tblTnE_Doc %>%
   summarise(CommonName = paste(CommonName, collapse = "; "))
 print(all_excel_sheets_drop_duplicate_common_names$tblTnE_Doc_collapse)
 ```
@@ -396,7 +422,7 @@ print(all_excel_sheets_drop_duplicate_common_names$tblTnE_Doc_collapse)
 This equals the number of rows that we collapse using the `group_by` method.
 
 ```{r}
-orig <- all_excel_sheets_drop_duplicate_common_names$tblTnE_Doc %>% 
+orig <- all_excel_sheets_drop_duplicate_common_names$tblTnE_Doc %>%
   nrow()
 remov_dup <- all_excel_sheets_drop_duplicate_common_names$tblTnE_Doc_collapse %>%
   nrow()
@@ -407,8 +433,8 @@ orig - remov_dup
 Here we over-write the original data with the collapsed "CommonName" column.
 
 ```{r}
-all_excel_sheets_drop_duplicate_common_names$tblTnE_Doc <- 
-all_excel_sheets_drop_duplicate_common_names$tblTnE_Doc %>% 
+all_excel_sheets_drop_duplicate_common_names$tblTnE_Doc <-
+  all_excel_sheets_drop_duplicate_common_names$tblTnE_Doc %>%
   summarise(CommonName = paste(CommonName, collapse = "; "))
 print(all_excel_sheets_drop_duplicate_common_names$tblTnE_Doc)
 ```
@@ -419,8 +445,11 @@ print(all_excel_sheets_drop_duplicate_common_names$tblTnE_Doc)
 ```{r}
 openxlsx::write.xlsx(
   all_excel_sheets_drop_duplicate_common_names,
-  file.path("data",
-            "05-intermediate-collapse-common-names-from-tblTnE_Doc.xlsx"))
+  file.path(
+    "data",
+    "05-intermediate-collapse-common-names-from-tblTnE_Doc.xlsx"
+  )
+)
 ```
 
 
@@ -435,8 +464,7 @@ all_excel_sheets_drop_duplicate_common_names
 The "None" from the CommonName column in tblTnE_Doc is mutually exclusive, meaning that "None" cannot also exclusive.
 
 ```{r}
-all_excel_sheets_drop_duplicate_common_names$tblTnE_Doc %>% dplyr::filter(group_size() >1)
-
+all_excel_sheets_drop_duplicate_common_names$tblTnE_Doc %>% dplyr::filter(group_size() > 1)
 ```
 
 We also need to merge the common names from tblTnE_Doc each common name is in multiple rows, merge into a single row, separate each value with a comma.
