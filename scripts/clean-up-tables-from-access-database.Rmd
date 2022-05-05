@@ -7,7 +7,7 @@ output:
   html_document: default
 ---
 
-# Setup 
+## Setup 
 
 Remove all of the objects from the R environment to start fresh every time.
 
@@ -21,14 +21,14 @@ knitr::opts_knit$set(root.dir = "~/adaptive-management-docs")
 ```
 
 ```{r load all packages}
-source("packages.R")
+source("scripts/packages.R")
 ```
 
 ```{r load custom functions}
-source("functions.R")
+source("scripts/functions.R")
 ```
 
-# Load Data
+## Load Data
 
 ```{r add file path}
 path_to_excel_file <- file.path("data", "adaptive_management_documents_asessment_export_all_tables_from_access.xlsx")
@@ -44,7 +44,7 @@ sheet_names <- openxlsx::getSheetNames(path_to_excel_file)
 print(sheet_names)
 ```
 
-```{r load in data from Excel}
+```{r load data from Excel}
 all_excel_sheets_list <- lapply(sheet_names, openxlsx::read.xlsx, xlsxFile = path_to_excel_file)
 
 all_excel_sheets_list
@@ -52,67 +52,75 @@ all_excel_sheets_list
 
 The "convert_from_excel_dates_to_datetime" function now uses a column name parameter that performs the clean up function on an column in the data frame that matches the column name supplied in the function parameter.
 
-```{r}
+```{r set sheet names}
 names(all_excel_sheets_list) <- sheet_names
 
 names(all_excel_sheets_list)
 ```
 
-```{r}
-all_excel_sheets_list$tblTnELimits_Doc
+## Clean Up Dates
+
+The variously named "Date" columns in each Excel sheet were read in as doubles, as that is how they are stored in Excel.
+
+```{r preview dates from a dataframe}
+all_excel_sheets_list$tblTnELimits_Doc %>% select(Date.Entered)
 ```
 
-```{r}
+We want to display Date columns as a `datetime` class inside of R. 
+
+We created a function that helps convert each "Date" column from within each data frame,
+and then converts it to a `datetime` class. This funciton takes the name of the column as an input.
+
+We will preview what the function does before we apply it to our data.
+
+```{r preview convert dates function}
 df <- all_excel_sheets_list$tblTnELimits_Doc
 
 convert_from_excel_dates_to_datetime(df, "Date.Entered")
 ```
 
-```{r map custom clean dates fucntion to list of data frames}
+Now that we know what the function does, we can apply it to each "Date" column in our data.
+
+Note that `purrr:map()` will apply our function to every column named "Date.Entered" in our data.
+
+```{r map clean dates function to column "Date.Entered"}
 all_excel_sheets_cleaned_date_entered <- purrr::map(all_excel_sheets_list,
   convert_from_excel_dates_to_datetime,
   col_name = "Date.Entered"
 )
 ```
 
+Some more information about the various "Date" columns in our data.
+
 The "CodingDate" column means exactly the same as "Date.Entered" and we can rename that column to be the same thing. Then we could run our function on the previously names "CodingDate" column.
 
 The "DateOn" and "DateOff" columns are the dates that cows were turned out onto pasture and removed from pastures. These columns also need to be converted into Date class.
 
-In the "DocSpecs" data frame the "DocYear" column was coded in using a table of codes from the dmnSpecs
+In the "DocSpecs" data frame the "DocYear" column was coded in using a table of codes from the table dmnSpecs.
 
-We want to keep only these tables from the Access database.
-
-Rename each element in the list by the name of the Excel sheet.
-
-
-```{r}
+```{r map clean dates function to column "DateOn"}
 all_excel_sheets_cleaned_dateon <- purrr::map(all_excel_sheets_cleaned_date_entered,
   convert_from_excel_dates_to_datetime,
   col_name = "DateOn"
 )
 ```
 
-```{r}
+```{r map clean dates function to column "DateOff"}
 all_excel_sheets_cleaned_dateoff <- purrr::map(all_excel_sheets_cleaned_dateon,
   convert_from_excel_dates_to_datetime,
   col_name = "DateOff"
 )
 ```
 
-```{r}
+```{r map clean dates function to column "DateOff"}
 all_excel_sheets_cleaned_dateoff <- purrr::map(all_excel_sheets_cleaned_dateon,
   convert_from_excel_dates_to_datetime,
   col_name = "DateOff"
 )
 ```
 
-```{r}
-names(all_excel_sheets_cleaned_dateoff$tblDocSpecs)
-```
 
-
-```{r}
+```{r map clean dates function to column "CodingDate"}
 all_excel_sheets_cleaned_coding_date <- purrr::map(all_excel_sheets_cleaned_dateoff,
   convert_from_excel_dates_to_datetime,
   col_name = "CodingDate"
@@ -298,6 +306,7 @@ print(all_excel_sheets_cleaned_full_join_arrange$tblDocSpecs)
 ```
 
 We might decide to replace the "N/A" values are true NA values, but for now, let's replace "N/A" with "None"
+
 ```{r}
 # all_excel_sheets_cleaned_full_join_arrange$tblDocSpecs$Limitation <- str_replace_all(all_excel_sheets_cleaned_full_join_arrange$tblDocSpecs$Limitation, "N/A", NA_character_)
 #

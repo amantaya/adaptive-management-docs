@@ -1,5 +1,5 @@
 # install the `pacman` package manager
-# install.packages("pacman")
+#install.packages("pacman")
 library("pacman")
 
 # Install and/or Load Commonly Used Packages
@@ -19,3 +19,4 @@ p_load("openxlsx")
 p_load("hms")
 p_load("styler")
 p_load("lintr")
+p_load("openxlsx")
