@@ -1,0 +1,11 @@
+git config --global user.email "aantaya@email.arizona.edu
+git config --global user.name "amantaya"
+
+git commit -m ""
+
+# this causes a Rstudio dialouge to open
+git push
+
+# then enter in Github username
+
+# then enter in Github password or personal access token
