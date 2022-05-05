@@ -38,5 +38,9 @@ vignettes/*.pdf
 # R Environment Variables
 .Renviron
 
-# ignore data folder
+# Ignore data
 data
+
+# Ignore docker container backups
+containers
+
