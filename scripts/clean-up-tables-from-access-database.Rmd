@@ -1,10 +1,10 @@
 ---
 title: "Clean Up Tables from Access Database"
-author: "Cameron Burleson"
+author: ""
 date: "3/28/2022"
 output:
   pdf_document: default
-  html_document: default
+  toc: true
 ---
 
 ## Setup 
@@ -129,155 +129,152 @@ all_excel_sheets_cleaned_coding_date <- purrr::map(all_excel_sheets_cleaned_date
 
 The datetimes below are in the wrong time zone. They are displaying in the UTC time zone, but the data was actually entered in with GMT -7 time zone. 
 
-```{r}
-names(all_excel_sheets_cleaned_coding_date$tblAmendSpecs)
-```
-
-
-```{r}
+```{r map clean dates function to column "datDate.Entered"}
 all_excel_sheets_cleaned_datdate_entered <- purrr::map(all_excel_sheets_cleaned_coding_date,
   convert_from_excel_dates_to_datetime,
   col_name = "datDate.Entered"
 )
 ```
 
-
-```{r}
-all_excel_sheets_cleaned_datdate_entered$tblAmendSpecs
-```
-
-```{r}
-names(all_excel_sheets_cleaned_datdate_entered$tblAllotSpecs)
-```
-
-```{r}
+```{r map clean dates function to column "datValidStart"}
 all_excel_sheets_cleaned_allot_specs_table <- purrr::map(all_excel_sheets_cleaned_datdate_entered,
   convert_from_excel_dates_to_datetime,
   col_name = "datValidStart"
 )
+```
 
+```{r map clean dates function to column "datValidEnd"}
 all_excel_sheets_cleaned_allot_specs_table <- purrr::map(all_excel_sheets_cleaned_allot_specs_table,
   convert_from_excel_dates_to_datetime,
   col_name = "datValidEnd"
 )
+```
 
+```{r map clean dates function to column "datPermitStart"}
 all_excel_sheets_cleaned_allot_specs_table <- purrr::map(all_excel_sheets_cleaned_allot_specs_table,
   convert_from_excel_dates_to_datetime,
   col_name = "datPermitStart"
 )
+```
 
+```{r map clean dates function to column "datPermitEnd"}
 all_excel_sheets_cleaned_allot_specs_table <- purrr::map(all_excel_sheets_cleaned_allot_specs_table,
   convert_from_excel_dates_to_datetime,
   col_name = "datPermitEnd"
 )
+```
 
+```{r map clean dates function to column "DateEntered"}
 all_excel_sheets_cleaned_allot_specs_table <- purrr::map(all_excel_sheets_cleaned_allot_specs_table,
   convert_from_excel_dates_to_datetime,
   col_name = "DateEntered"
 )
 ```
 
-```{r}
-all_excel_sheets_cleaned_allot_specs_table$dmnYears
+## Rename Columns 
 
-all_excel_sheets_cleaned_allot_specs_table$tblDocSpecs
+There are many columns that we need to rename in the database.
+
+The table "dmnYears" contains a code for entering in the document year in the "DocYear" column in other tables. In "dmnYears" year 1996 is coded as "7". Not sure why. The table "tblDocSpecs" contains only a "DocYear" column so we want to replace those coded values with the actual year of the document.
+
+```{r Rename "ID" to "DocYear" in "dmnYears"}
+all_excel_sheets_cleaned_allot_specs_table$dmnYears <- all_excel_sheets_cleaned_allot_specs_table$dmnYears %>% 
+  dplyr::rename(DocYear = ID)
+
+all_excel_sheets_cleaned_allot_specs_table$dmnYears
 ```
 
-```{r}
-all_excel_sheets_cleaned_allot_specs_table$dmnYears <- all_excel_sheets_cleaned_allot_specs_table$dmnYears %>% dplyr::rename(DocYear = ID)
+## Join "dmnYears" and "tblDocSpecs"
 
-all_excel_sheets_cleaned_allot_specs_table$dmnYears
-```
+The right join will match the "DocYear" value from the "dmnYears" table with the "DocYear" value in the "tblDocSpecs" table and replace the "DocYear" value in the "tblDocSpecs" table with the "Date_Year" from the "dmnYEars".
 
-The table "dmnYears" contains a code for entering in the document year in the "DocYear" column. Year 1996 is coded as "7". The "tblDocSpecs" contains only a "DocYear" column so we want to replace those coded values with the actual year of the document.
-
-```{r}
-# match the DocYear value from the "dmnYears" data frame with
-# the DocYear value in the "tblDocSpecs" data frame
-# and replace the "DocYear" value in the "tblDocSpecs" data
-# with the "Date_Year" from the "dmnYEars"
-
+```{r right join "dmnYears" and "tblDocSpecs" by "DocYear"}
 all_excel_sheets_cleaned_allot_specs_table$tblDocSpecs <- dplyr::right_join(all_excel_sheets_cleaned_allot_specs_table$dmnYears, all_excel_sheets_cleaned_allot_specs_table$tblDocSpecs, by = "DocYear")
 
 all_excel_sheets_cleaned_allot_specs_table$tblDocSpecs
 ```
 
-We will drop the "DocYear" column from the "tblDocSpecs" data frame, and then rename the "Date_Year" column to be called "AOI_Year". 
+We will drop the "DocYear" column from the "tblDocSpecs" data frame, and then rename the "Date_Year" column to be called "AOI_Year". Renaming the column to "AOI_Year" better represents the meaning on the column. The "AOI_Year"
 
-```{r}
+## TODO refactor to overwrite excel list instead of creating new objects
+
+```{r drop "DocYear" from "tblDocSpecs" and rename to "AOI_Year"}
 all_excel_sheets_cleaned_allot_specs_table$tblDocSpecs <-
   all_excel_sheets_cleaned_allot_specs_table$tblDocSpecs %>%
-  dplyr::select(-(DocYear))
-```
-
-```{r}
-all_excel_sheets_cleaned_allot_specs_table$tblDocSpecs <-
-  all_excel_sheets_cleaned_allot_specs_table$tblDocSpecs %>% rename(AOI_Year = Date_Year)
-
+  dplyr::select(-(DocYear)) %>% 
+  dplyr::rename(AOI_Year = Date_Year) %>% 
+  dplyr::arrange(DocNo)
 all_excel_sheets_cleaned_allot_specs_table$tblDocSpecs
 ```
 
-```{r}
-all_excel_sheets_cleaned_allot_specs_table$tblDocSpecs <-
-  all_excel_sheets_cleaned_allot_specs_table$tblDocSpecs %>% dplyr::arrange(DocNo)
+Write Partially Cleaned Data to CSV File
 
-all_excel_sheets_cleaned_allot_specs_table
-```
-
-```{r}
-names(all_excel_sheets_cleaned_allot_specs_table)
-```
-
-### Write Partially Cleaned Data to CSV File
-
-```{r Write Intermediate Data to CSV}
+```{r Write Intermediate Data to CSV, eval=FALSE}
 openxlsx::write.xlsx(all_excel_sheets_cleaned_allot_specs_table, file.path("data", "01-intermediate-clean-excel-dates-and-join-docyear-on-table-docspecs.xlsx"))
 ```
 
+## Rename List of Data Frames
+
 Rename the list to something smaller and easier to type.
 
-```{r}
-# TODO overwrite the all_excel_sheets objects during each step to reduce
-# the number of objects in the environment because its starting to get confusing
-# about which object is from the previous step
+```{r rename to "all_excel_sheets_cleaned"}
 all_excel_sheets_cleaned <- all_excel_sheets_cleaned_allot_specs_table
 ```
 
-Join the "tblTnELimits_Doc" with the "tblDocSpecs" on the "DocNo" column.
+## Clean Up "tblTnELimits_Doc" 
 
-```{r}
+Before we join the "tblTnELimits_Doc" with the "tblDocSpecs" on the "DocNo" column, we will use `dplyr::semi_join()` to see which rows in "tblDocSpecs" have a match in "tblTnELimits_Doc".
+
+```{r semi-join }
 dplyr::semi_join(all_excel_sheets_cleaned$tblDocSpecs,
   all_excel_sheets_cleaned$tblTnELimits_Doc,
   by = "DocNo"
 )
 ```
 
-```{r}
-all_excel_sheets_cleaned$tblTnELimits_Doc
+There are 2,360 rows in the "tblDocSpecs" but there are only 2,302 matches. That means that there are 58 rows that do not match.
+
+```{r nrows in "tblDocSpecs"}
+all_excel_sheets_cleaned$tblDocSpecs %>% nrow()
 ```
 
+## TODO ask why we only kept these columns
 
-```{r}
+```{r drop columns from "tblTnELimits_Doc"}
 all_excel_sheets_cleaned$tblTnELimits_Doc <-
   all_excel_sheets_cleaned$tblTnELimits_Doc %>%
   dplyr::select(Limitation, DocNo)
-
-all_excel_sheets_cleaned_right_join <- all_excel_sheets_cleaned
-
-all_excel_sheets_cleaned_right_join$tblDocSpecs <- dplyr::right_join(all_excel_sheets_cleaned_right_join$tblDocSpecs, all_excel_sheets_cleaned_right_join$tblTnELimits_Doc,
-  by = "DocNo"
-)
-
-all_excel_sheets_cleaned_right_join$tblDocSpecs
 ```
 
+## TODO not sure if we need this anymore or if it was just for prototyping
+
+Before we change "tblDocSpecs" we want to see how each type of join will affect the data.
+The function `right_join()` will join matching values from "tblDocSpecs" into "tblTnELimits_Doc".
+
+We created a new object "all_excel_sheets_cleaned_right_join" to temporarily store the data so we can compare against other types of joins.
+
+```{r}
+all_excel_sheets_cleaned_right_join <- all_excel_sheets_cleaned
+
+all_excel_sheets_cleaned_right_join$tblDocSpecs <- 
+  dplyr::right_join(
+    all_excel_sheets_cleaned_right_join$tblDocSpecs,
+    all_excel_sheets_cleaned_right_join$tblTnELimits_Doc,
+    by = "DocNo"
+)
+print(all_excel_sheets_cleaned_right_join$tblDocSpecs)
+```
+
+## TODO not sure if we need this anymore or if it was just for prototyping
+
+We'll do the same thing as we just did with `right_join()` but this time we will use the function `full_join()`.
 
 ```{r}
 all_excel_sheets_cleaned_full_join <- all_excel_sheets_cleaned
 
 all_excel_sheets_cleaned_full_join$tblDocSpecs <-
-  dplyr::full_join(all_excel_sheets_cleaned$tblDocSpecs,
-    all_excel_sheets_cleaned$tblTnELimits_Doc,
+  dplyr::full_join(all_excel_sheets_cleaned_full_join$tblDocSpecs,
+    all_excel_sheets_cleaned_full_join$tblTnELimits_Doc,
     by = "DocNo"
   )
 
@@ -286,7 +283,7 @@ all_excel_sheets_cleaned_full_join$tblDocSpecs
 
 The anti join is telling us that there are 58 additional rows in the full join that did not match.
 
-```{r}
+```{r anti join}
 anti_join(
   all_excel_sheets_cleaned_full_join$tblDocSpecs,
   all_excel_sheets_cleaned_right_join$tblDocSpecs
@@ -304,6 +301,8 @@ all_excel_sheets_cleaned_full_join_arrange$tblDocSpecs <- all_excel_sheets_clean
 
 print(all_excel_sheets_cleaned_full_join_arrange$tblDocSpecs)
 ```
+
+## TODO decide if we want to replace the "N/A" strings with true NA values
 
 We might decide to replace the "N/A" values are true NA values, but for now, let's replace "N/A" with "None"
 
@@ -326,16 +325,16 @@ all_excel_sheets_cleaned_full_join_arrange$tblDocSpecs$Limitation <-
 all_excel_sheets_cleaned_full_join_arrange$tblDocSpecs
 ```
 
-### Write Partially Cleaned Data Step 02
+## 2.1
 
-```{r}
+```{r Write Partially Cleaned Data Step 02, eval=FALSE, include=FALSE}
 openxlsx::write.xlsx(
   all_excel_sheets_cleaned_full_join_arrange,
   file.path("data", "02-intermediate-full-join-limitations-doc-specs.xlsx")
 )
 ```
 
-## Step 03
+## 3.0
 
 ```{r}
 all_excel_sheets_cleaned_full_join_arrange$tblTnE_Doc
@@ -364,7 +363,7 @@ full - drop_dupl
 
 ### Write Intermediate Data to CSV Step 03
 
-```{r}
+```{r eval=FALSE, include=FALSE}
 openxlsx::write.xlsx(
   all_excel_sheets_drop_duplicate_common_names,
   file.path("data", "03-intermediate-drop-duplicate-common-names-tnedoc.xlsx")
@@ -406,7 +405,7 @@ print(all_excel_sheets_drop_duplicate_common_names$tblTnE_Doc)
 
 ### Write Partially Cleaned Data to CSV Step 04
 
-```{r}
+```{r eval=FALSE, include=FALSE}
 openxlsx::write.xlsx(
   all_excel_sheets_drop_duplicate_common_names,
   file.path(
@@ -451,7 +450,7 @@ print(all_excel_sheets_drop_duplicate_common_names$tblTnE_Doc)
 
 ## Step 05
 
-```{r}
+```{r eval=FALSE, include=FALSE}
 openxlsx::write.xlsx(
   all_excel_sheets_drop_duplicate_common_names,
   file.path(
@@ -462,42 +461,42 @@ openxlsx::write.xlsx(
 ```
 
 
-### TODO
+## TODO a couple of extra spaces in the "Modified Time/Place of Grazing" that we need to clean up
+
 The the  "Modified Time/Place of Grazing" in the "Limitation" has an extra space in the one of the values that we need to get rid of.
 
 ```{r}
 all_excel_sheets_drop_duplicate_common_names
 ```
 
+## TODO the "None" from the CommonName column in tblTnE_Doc is mutually exclusive, meaning that "None" cannot also exclusive. We decided to keep the "None" in the data and will 
 
-The "None" from the CommonName column in tblTnE_Doc is mutually exclusive, meaning that "None" cannot also exclusive.
-
-```{r}
-all_excel_sheets_drop_duplicate_common_names$tblTnE_Doc %>% dplyr::filter(group_size() > 1)
-```
-
-We also need to merge the common names from tblTnE_Doc each common name is in multiple rows, merge into a single row, separate each value with a comma.
+## 6.0 Full Join `tblTnE_Doc` with `tblDocSpecs` by `DocNo`
 
 ```{r}
-
-```
-
-
-```{r}
-# tblAllotSpecs
-
-# tblAllotmentKeySpecies
-
-# tblAllotSpecs
-
-# tblAllotStrategies
-
-# tblAmendSpecs
-
-# tblClimeChange_Doc
-
-# tblPastureSpecs
+all_excel_sheets_drop_duplicate_common_names$tblTnELimits_Doc <- 
+  full_join(all_excel_sheets_drop_duplicate_common_names$tblDocSpecs,
+          all_excel_sheets_drop_duplicate_common_names$tblTnE_Doc,
+          by = "DocNo") %>% 
+  dplyr::relocate(CommonName, .before = Limitation)
+print(all_excel_sheets_drop_duplicate_common_names$tblTnELimits_Doc)
 ```
 
 
+```{r temp}
+all_excel_sheets_drop_duplicate_common_names$tblDocSpecs %>% names()
+```
+
+```{r temp}
+all_excel_sheets_drop_duplicate_common_names$tblClimeChange_Doc %>% names()
+```
+
+## Full Join with `tblDocSpecs` and `tblClimeChange_Doc` by `DocNo`
+
+
+```{r}
+anti_join(all_excel_sheets_drop_duplicate_common_names$tblTnE_Doc, 
+          all_excel_sheets_drop_duplicate_common_names$tblDocSpecs, 
+          by = "DocNo") %>% View()
+```
 
