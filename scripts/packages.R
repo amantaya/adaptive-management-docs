@@ -1,6 +1,7 @@
 # install the `pacman` package manager
-#install.packages("pacman")
-library("pacman")
+# install.packages("pacman")
+
+require("pacman")
 
 # Install and/or Load Commonly Used Packages
 p_load("renv")
