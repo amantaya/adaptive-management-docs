@@ -6,6 +6,11 @@ output:
   pdf_document: default
   toc: true
 ---
+# 
+
+## Purpose
+
+__The purpose of this Rmarkdown document is to clean up an Access database containing data related to grazing, for the purposes of studying adaptive management__
 
 ## Setup 
 
@@ -28,7 +33,7 @@ source("scripts/packages.R")
 source("scripts/functions.R")
 ```
 
-## Load Data
+## 1.0 Load Data
 
 ```{r add file path}
 path_to_excel_file <- file.path("data", "adaptive_management_documents_asessment_export_all_tables_from_access.xlsx")
@@ -44,6 +49,8 @@ sheet_names <- openxlsx::getSheetNames(path_to_excel_file)
 print(sheet_names)
 ```
 
+Get all of the data from each of the sheets in Excel using `lapply()`.
+
 ```{r load data from Excel}
 all_excel_sheets_list <- lapply(sheet_names, openxlsx::read.xlsx, xlsxFile = path_to_excel_file)
 
@@ -58,7 +65,7 @@ names(all_excel_sheets_list) <- sheet_names
 names(all_excel_sheets_list)
 ```
 
-## Clean Up Dates
+## 2.0 Clean Up Dates
 
 The variously named "Date" columns in each Excel sheet were read in as doubles, as that is how they are stored in Excel.
 
@@ -112,14 +119,6 @@ all_excel_sheets_cleaned_dateoff <- purrr::map(all_excel_sheets_cleaned_dateon,
 )
 ```
 
-```{r map clean dates function to column "DateOff"}
-all_excel_sheets_cleaned_dateoff <- purrr::map(all_excel_sheets_cleaned_dateon,
-  convert_from_excel_dates_to_datetime,
-  col_name = "DateOff"
-)
-```
-
-
 ```{r map clean dates function to column "CodingDate"}
 all_excel_sheets_cleaned_coding_date <- purrr::map(all_excel_sheets_cleaned_dateoff,
   convert_from_excel_dates_to_datetime,
@@ -171,7 +170,7 @@ all_excel_sheets_cleaned_allot_specs_table <- purrr::map(all_excel_sheets_cleane
 )
 ```
 
-## Rename Columns 
+## 3.0 Rename Columns 
 
 There are many columns that we need to rename in the database.
 
@@ -184,7 +183,7 @@ all_excel_sheets_cleaned_allot_specs_table$dmnYears <- all_excel_sheets_cleaned_
 all_excel_sheets_cleaned_allot_specs_table$dmnYears
 ```
 
-## Join "dmnYears" and "tblDocSpecs"
+## 4.0 Join "dmnYears" and "tblDocSpecs"
 
 The right join will match the "DocYear" value from the "dmnYears" table with the "DocYear" value in the "tblDocSpecs" table and replace the "DocYear" value in the "tblDocSpecs" table with the "Date_Year" from the "dmnYEars".
 
@@ -209,11 +208,13 @@ all_excel_sheets_cleaned_allot_specs_table$tblDocSpecs
 
 Write Partially Cleaned Data to CSV File
 
-```{r Write Intermediate Data to CSV, eval=FALSE}
+```{r 4.1 write data to csv file, eval=FALSE}
 openxlsx::write.xlsx(all_excel_sheets_cleaned_allot_specs_table, file.path("data", "01-intermediate-clean-excel-dates-and-join-docyear-on-table-docspecs.xlsx"))
 ```
 
-## Rename List of Data Frames
+***
+
+## 5.0 Rename List of Data Frames
 
 Rename the list to something smaller and easier to type.
 
@@ -221,7 +222,7 @@ Rename the list to something smaller and easier to type.
 all_excel_sheets_cleaned <- all_excel_sheets_cleaned_allot_specs_table
 ```
 
-## Clean Up "tblTnELimits_Doc" 
+## 6.0 Clean Up "tblTnELimits_Doc" and "tblDocSpecs"
 
 Before we join the "tblTnELimits_Doc" with the "tblDocSpecs" on the "DocNo" column, we will use `dplyr::semi_join()` to see which rows in "tblDocSpecs" have a match in "tblTnELimits_Doc".
 
@@ -253,7 +254,7 @@ The function `right_join()` will join matching values from "tblDocSpecs" into "t
 
 We created a new object "all_excel_sheets_cleaned_right_join" to temporarily store the data so we can compare against other types of joins.
 
-```{r}
+```{r right join "tblDocSpecs" "tblTnELimits_Doc"}
 all_excel_sheets_cleaned_right_join <- all_excel_sheets_cleaned
 
 all_excel_sheets_cleaned_right_join$tblDocSpecs <- 
@@ -269,7 +270,7 @@ print(all_excel_sheets_cleaned_right_join$tblDocSpecs)
 
 We'll do the same thing as we just did with `right_join()` but this time we will use the function `full_join()`.
 
-```{r}
+```{r full join "tblDocSpecs" "tblTnELimits_Doc"}
 all_excel_sheets_cleaned_full_join <- all_excel_sheets_cleaned
 
 all_excel_sheets_cleaned_full_join$tblDocSpecs <-
@@ -283,7 +284,7 @@ all_excel_sheets_cleaned_full_join$tblDocSpecs
 
 The anti join is telling us that there are 58 additional rows in the full join that did not match.
 
-```{r anti join}
+```{r anti join "tblDocSpecs" "tblTnELimits_Doc"}
 anti_join(
   all_excel_sheets_cleaned_full_join$tblDocSpecs,
   all_excel_sheets_cleaned_right_join$tblDocSpecs
@@ -292,7 +293,7 @@ anti_join(
 
 When we joined, the column "DocNo" in the sheet "tblDocSpecs" the new data was added 
 
-```{r}
+```{r 6.1 arrange by DocNo}
 all_excel_sheets_cleaned_full_join_arrange <-
   all_excel_sheets_cleaned_full_join
 
@@ -306,7 +307,7 @@ print(all_excel_sheets_cleaned_full_join_arrange$tblDocSpecs)
 
 We might decide to replace the "N/A" values are true NA values, but for now, let's replace "N/A" with "None"
 
-```{r}
+```{r replace "N/A" with NA character}
 # all_excel_sheets_cleaned_full_join_arrange$tblDocSpecs$Limitation <- str_replace_all(all_excel_sheets_cleaned_full_join_arrange$tblDocSpecs$Limitation, "N/A", NA_character_)
 #
 # View(all_excel_sheets_cleaned_full_join_arrange$tblDocSpecs)
@@ -314,7 +315,7 @@ We might decide to replace the "N/A" values are true NA values, but for now, let
 
 The limitation column represents limitations placed on each allotment related to threatened and endangered species present on the allotment, or concerns related to T/E species. 
 
-```{r}
+```{r string replace "N/A" with "None}
 all_excel_sheets_cleaned_full_join_arrange$tblDocSpecs$Limitation <-
   str_replace_all(
     all_excel_sheets_cleaned_full_join_arrange$tblDocSpecs$Limitation,
@@ -325,22 +326,18 @@ all_excel_sheets_cleaned_full_join_arrange$tblDocSpecs$Limitation <-
 all_excel_sheets_cleaned_full_join_arrange$tblDocSpecs
 ```
 
-## 2.1
+Write out the partially cleaned data to a csv file.
 
-```{r Write Partially Cleaned Data Step 02, eval=FALSE, include=FALSE}
+```{r 6.1 write to csv, eval=FALSE}
 openxlsx::write.xlsx(
   all_excel_sheets_cleaned_full_join_arrange,
   file.path("data", "02-intermediate-full-join-limitations-doc-specs.xlsx")
 )
 ```
 
-## 3.0
+## Step 7 Clean Up "tblTnE_Doc"
 
-```{r}
-all_excel_sheets_cleaned_full_join_arrange$tblTnE_Doc
-```
-
-```{r}
+```{r 7.1.0 drop duplicate common names}
 all_excel_sheets_drop_duplicate_common_names <- all_excel_sheets_cleaned_full_join_arrange
 
 all_excel_sheets_drop_duplicate_common_names$tblTnE_Doc <-
@@ -353,7 +350,7 @@ all_excel_sheets_drop_duplicate_common_names$tblTnE_Doc
 
 Let's see how many rows were dropped when we used the distinct() function. 
 
-```{r}
+```{r 7.1.1 check how many duplicates names were dropped}
 full <- all_excel_sheets_cleaned_full_join_arrange$tblTnE_Doc$CommonName %>% length()
 
 drop_dupl <- all_excel_sheets_drop_duplicate_common_names$tblTnE_Doc$DocNo %>% length()
@@ -361,41 +358,39 @@ drop_dupl <- all_excel_sheets_drop_duplicate_common_names$tblTnE_Doc$DocNo %>% l
 full - drop_dupl
 ```
 
-### Write Intermediate Data to CSV Step 03
-
-```{r eval=FALSE, include=FALSE}
+```{r 7.1.2 write to csv, eval=FALSE}
 openxlsx::write.xlsx(
   all_excel_sheets_drop_duplicate_common_names,
   file.path("data", "03-intermediate-drop-duplicate-common-names-tnedoc.xlsx")
 )
 ```
 
-## Step 04
-
-```{r}
-all_excel_sheets_drop_duplicate_common_names$tblTnE_Doc
-```
+### 7.2 Trim Whitespace from "tblTnE_Doc"
 
 We need to visualize how many Common Names are for each group to understand how many times we need to perform a clean up.
 
-```{r}
+```{r 7.2.1 check group size}
 all_excel_sheets_drop_duplicate_common_names$tblTnE_Doc %>% dplyr::group_size()
 ```
 
-```{r}
+The leading whitespaces are difficult to identify. However, we can use the `unique()` function to see how many unique common names R thinks there are, and this should identify if there are common names with leading whitespace.
+
+```{r 7.2.3 check unique common names}
 all_excel_sheets_drop_duplicate_common_names$tblTnE_Doc %>%
   pull(CommonName) %>%
   unique()
 ```
 
-```{r}
+Then if we compare the unique common names after we trim the leading whitespace, we can tell that R thinks there are now less unique values.
+
+```{r 7.2.4 check unique trim leading spaces}
 all_excel_sheets_drop_duplicate_common_names$tblTnE_Doc %>%
   dplyr::pull(CommonName) %>%
   stringr::str_trim() %>%
   unique()
 ```
 
-```{r}
+```{r 7.2.5 trim leading whitespaces}
 all_excel_sheets_drop_duplicate_common_names$tblTnE_Doc$CommonName <-
   all_excel_sheets_drop_duplicate_common_names$tblTnE_Doc %>%
   dplyr::pull(CommonName) %>%
@@ -403,9 +398,9 @@ all_excel_sheets_drop_duplicate_common_names$tblTnE_Doc$CommonName <-
 print(all_excel_sheets_drop_duplicate_common_names$tblTnE_Doc)
 ```
 
-### Write Partially Cleaned Data to CSV Step 04
+## 7.3 Write "tblTnE_Doc" to CSV
 
-```{r eval=FALSE, include=FALSE}
+```{r 7.3 write to csv, eval=FALSE}
 openxlsx::write.xlsx(
   all_excel_sheets_drop_duplicate_common_names,
   file.path(
@@ -416,11 +411,11 @@ openxlsx::write.xlsx(
 ```
 
 
-## Step 05
+## Step 8
 
 Collapse each common name from tblTnE_Doc into single column.
 
-```{r}
+```{r 8.1.0 collapse common names}
 all_excel_sheets_drop_duplicate_common_names$tblTnE_Doc_collapse <-
   all_excel_sheets_drop_duplicate_common_names$tblTnE_Doc %>%
   summarise(CommonName = paste(CommonName, collapse = "; "))
@@ -429,7 +424,7 @@ print(all_excel_sheets_drop_duplicate_common_names$tblTnE_Doc_collapse)
 
 This equals the number of rows that we collapse using the `group_by` method.
 
-```{r}
+```{r 8.1.1 check how many rows were collapsed}
 orig <- all_excel_sheets_drop_duplicate_common_names$tblTnE_Doc %>%
   nrow()
 remov_dup <- all_excel_sheets_drop_duplicate_common_names$tblTnE_Doc_collapse %>%
@@ -440,17 +435,15 @@ orig - remov_dup
 
 Here we over-write the original data with the collapsed "CommonName" column.
 
-```{r}
+```{r 8.1.2 overwrite "CommonName" column}
 all_excel_sheets_drop_duplicate_common_names$tblTnE_Doc <-
   all_excel_sheets_drop_duplicate_common_names$tblTnE_Doc %>%
   summarise(CommonName = paste(CommonName, collapse = "; "))
+
 print(all_excel_sheets_drop_duplicate_common_names$tblTnE_Doc)
 ```
 
-
-## Step 05
-
-```{r eval=FALSE, include=FALSE}
+```{r 8.1.3 write to csv, eval=FALSE}
 openxlsx::write.xlsx(
   all_excel_sheets_drop_duplicate_common_names,
   file.path(
@@ -460,28 +453,21 @@ openxlsx::write.xlsx(
 )
 ```
 
-
-## TODO a couple of extra spaces in the "Modified Time/Place of Grazing" that we need to clean up
-
-The the  "Modified Time/Place of Grazing" in the "Limitation" has an extra space in the one of the values that we need to get rid of.
-
-```{r}
-all_excel_sheets_drop_duplicate_common_names
-```
+## TODO the  "Modified Time/Place of Grazing" in the "Limitation" has an extra space in the one of the values that we need to get rid of.
 
 ## TODO the "None" from the CommonName column in tblTnE_Doc is mutually exclusive, meaning that "None" cannot also exclusive. We decided to keep the "None" in the data and will 
 
-## 6.0 Full Join `tblTnE_Doc` with `tblDocSpecs` by `DocNo`
+## Step 9 Full Join `tblTnE_Doc` with `tblDocSpecs` by `DocNo`
 
-```{r}
-all_excel_sheets_drop_duplicate_common_names$tblTnELimits_Doc <- 
-  full_join(all_excel_sheets_drop_duplicate_common_names$tblDocSpecs,
-          all_excel_sheets_drop_duplicate_common_names$tblTnE_Doc,
-          by = "DocNo") %>% 
-  dplyr::relocate(CommonName, .before = Limitation)
+```{r 9.1.0 full full "tblDocSpecs" "tblTnE_Doc"}
+all_excel_sheets_drop_duplicate_common_names$tblDocSpecs <-# overwrite the tblDocSpecs
+  full_join(all_excel_sheets_drop_duplicate_common_names$tblDocSpecs, # add to this table
+          all_excel_sheets_drop_duplicate_common_names$tblTnE_Doc, # with data from this table
+          by = "DocNo") %>% # by the document number
+  dplyr::relocate(CommonName, .before = Limitation) # rearrange columns
+
 print(all_excel_sheets_drop_duplicate_common_names$tblTnELimits_Doc)
 ```
-
 
 ```{r temp}
 all_excel_sheets_drop_duplicate_common_names$tblDocSpecs %>% names()
@@ -491,12 +477,224 @@ all_excel_sheets_drop_duplicate_common_names$tblDocSpecs %>% names()
 all_excel_sheets_drop_duplicate_common_names$tblClimeChange_Doc %>% names()
 ```
 
-## Full Join with `tblDocSpecs` and `tblClimeChange_Doc` by `DocNo`
+### 9.2 Full Join with `tblDocSpecs` and `tblClimeChange_Doc` by `DocNo`
 
+First we want to drop the `tblClimeChange_Doc$Date.Entered` and `tblClimeChange_Doc$id` columsn from the `tbltblClimeChange_Doc` because if we where to join them to `tblDocSpecs`
+those columns it would be confusing as it would no longer refer to the originial data.
 
-```{r}
-anti_join(all_excel_sheets_drop_duplicate_common_names$tblTnE_Doc, 
-          all_excel_sheets_drop_duplicate_common_names$tblDocSpecs, 
-          by = "DocNo") %>% View()
+```{r 9.2.1 trim leading whitespace "ClimeChangeDoc"}
+all_excel_sheets_drop_duplicate_common_names$tblClimeChange_Doc$ClimeChangeDoc <- all_excel_sheets_drop_duplicate_common_names$tblClimeChange_Doc %>% 
+  pull(ClimeChangeDoc) %>% 
+  str_trim()
 ```
 
+```{r 9.2.2 string replace "N/A" with "None}
+all_excel_sheets_drop_duplicate_common_names$tblClimeChange_Doc$ClimeChangeDoc <- 
+all_excel_sheets_drop_duplicate_common_names$tblClimeChange_Doc$ClimeChangeDoc %>%
+  stringr::str_replace_all(pattern = "N/A", replacement = "None")
+print(all_excel_sheets_drop_duplicate_common_names$tblClimeChange_Doc)
+```
+
+The table `tblClimeChange_Doc` has duplicate entries for each document number that we want to combine together so that each document number has a single row. We can then remove these duplicates in a later step after we decide which values to keep.
+
+## TODO optionally, we can decide to drop the `id` column from `tblClimeChange_Doc` if we decide its just an index column.
+
+## TODO optionally, we can drop the `Date.Entered` column, or remove the duplicate dates
+
+```{r 9.2.3 collapse tblClimeChange_Doc}
+all_excel_sheets_drop_duplicate_common_names$tblClimeChange_Doc <- 
+all_excel_sheets_drop_duplicate_common_names$tblClimeChange_Doc %>% 
+  group_by(DocNo) %>% 
+  summarise(ClimeChangeDoc = paste(ClimeChangeDoc, collapse = "; "), 
+            id = paste(id, collapse = "; "),
+            Date.Entered = paste(Date.Entered, collapse = "; ")
+  )
+print(all_excel_sheets_drop_duplicate_common_names$tblClimeChange_Doc)
+```
+
+We want to add climate change documents from `tblClimeChange_Doc` to `tblDocSpecs` using the columns `DocNo` and `ClimeChangeDoc` from the `tblClimeChange_Doc` table.
+
+## TODO there are duplicate `DocNo` in the table `tblDocSpecs` we may want to run `dplyr::distinct()` on the table
+
+## TODO also we want to consider which rows are preserved using a full join. It might be worth it to use an `anti_join()` to see what's going on first before the full join.
+
+```{r 9.2.4 full join "tblDocSpecs" "tblClimeChange_Doc"}
+all_excel_sheets_drop_duplicate_common_names$tblDocSpecs <- 
+all_excel_sheets_drop_duplicate_common_names$tblDocSpecs %>% 
+full_join(select(all_excel_sheets_drop_duplicate_common_names$tblClimeChange_Doc,
+                 DocNo,
+                 ClimeChangeDoc),
+          by = c("DocNo")
+          ) %>% 
+  arrange(DocNo)
+```
+
+## TODO all the code chunks that say "Write to CSV" are actually "Write to XLSX"
+
+Let's write out the data to an intermediate file for a closer look.
+
+```{r 9.2.5 write to xlsx, eval=FALSE}
+openxlsx::write.xlsx(
+  all_excel_sheets_drop_duplicate_common_names,
+  file.path(
+    "data",
+    "06-intermediate-full-join-tblClimeChange_Doc-tblDocSpecs.xlsx"
+  )
+)
+```
+
+Take a look at the data to see if the join was successful.
+
+```{r 9.2.6 view tblDocSpecs}
+print(all_excel_sheets_drop_duplicate_common_names$tblDocSpecs)
+```
+
+## TODO I think we also want to look at why some tables have information for some document numbers, but that information doesn't exist in other tables.
+
+## Step 10 Collapse the "tblAllotStrategies" by "DocNo"
+
+```{r temp}
+all_excel_sheets <- all_excel_sheets_drop_duplicate_common_names
+
+all_excel_sheets$tblAllotStrategies %>% names()
+```
+
+There are a few leading whitespace in the "txtGrazingStrategy" that we need to get rid.
+
+```{r 10.1.0 trim leading whitespace from "txtGrazingStrategy"}
+all_excel_sheets$tblAllotStrategies$txtGrazingStrategy <- 
+all_excel_sheets$tblAllotStrategies %>% 
+  pull(txtGrazingStrategy) %>% 
+  stringr::str_trim()
+print(all_excel_sheets$tblAllotStrategies)
+```
+
+```{r temp}
+all_excel_sheets$tblAllotStrategies$txtGrazingStrategy %>% unique()
+```
+
+```{r 10.1.1 collapse "tblAllotStrategies" by DocNo}
+all_excel_sheets$tblAllotStrategies <- 
+all_excel_sheets$tblAllotStrategies %>% 
+  rename(DocNo = intDocNo) %>% 
+  dplyr::group_by(DocNo) %>%
+  summarize(ID = paste(ID, collapse = "; "),
+            txtAllotmentName = paste(txtAllotmentName, collapse = "; "),
+            txtGrazingStrategy = paste(txtGrazingStrategy, collapse = "; ")
+  )
+
+print(all_excel_sheets$tblAllotStrategies)
+```
+
+```{r 10.1.1 write to xlsx, eval=FALSE}
+write.xlsx(
+  all_excel_sheets,
+  file.path(
+    "data",
+    "07-intermediate-collapse-tblAllotStrategies.xlsx"
+  )
+)
+```
+
+```{r temp}
+all_excel_sheets$tblDocSpecs %>% names() 
+```
+
+```{r temp}
+all_excel_sheets$tblAllotStrategies %>% names() 
+```
+
+
+```{r 10.1.2}
+full_join(all_excel_sheets$tblDocSpecs, 
+          all_excel_sheets$tblAllotStrategies,
+          by = c("DocNo")
+)
+```
+
+```{r 10.1.3 write to xlsx, eval=FALSE}
+write.xlsx(
+  all_excel_sheets,
+  file.path(
+    "data",
+    "08-intermediate-full-join-tblDocSpecs-tblAllotStrategies.xlsx"
+  )
+)
+```
+
+## Step 11
+
+```{r temp}
+all_excel_sheets$tblPastureSpecs %>% names()
+```
+
+```{r temp}
+all_excel_sheets$dmnStockingUnit %>% names()
+```
+
+```{r temp}
+all_excel_sheets$tblPastureSpecs$PermitUnit %>% class()
+```
+
+```{r temp}
+all_excel_sheets$dmnStockingUnit$Unit %>% class()
+```
+
+```{r temp}
+all_excel_sheets$tblPastureSpecs$PermitUnit <- 
+all_excel_sheets$tblPastureSpecs$PermitUnit %>% as.numeric()
+```
+
+```{r temp}
+all_excel_sheets$tblPastureSpecs$PermitUnit %>% class()
+```
+
+## Step 11
+
+```{r}
+all_excel_sheets$dmnStockingUnit <-
+all_excel_sheets$dmnStockingUnit %>% rename(PermitUnit = ID)
+```
+
+```{r 11.0.0}
+all_excel_sheets$tblPastureSpecs <- 
+right_join(all_excel_sheets$dmnStockingUnit,
+           all_excel_sheets$tblPastureSpecs,
+           by = c("PermitUnit")
+           )
+
+print(all_excel_sheets$tblPastureSpecs)
+```
+
+## TODO optionally drop the "PermitUnit" column and rename the "Unit" column to "PermitUnit"
+
+```{r 11.1.0 write to xlsx, eval=FALSE}
+write.xlsx(
+  all_excel_sheets,
+  file.path(
+    "data",
+    "09-intermediate-right-join-dmnStockingUnit-tblPastureSpecs.xlsx"
+  )
+)
+```
+
+## TODO also need to replace the permit type tblPastureSpecs with the livestock type from dmnLivestockType
+
+```{r 11.2.0}
+all_excel_sheets$tblPastureSpecs <- 
+right_join(all_excel_sheets$dmnLivestockType,
+           all_excel_sheets$tblPastureSpecs,
+           by = c("ID" = "PermitType")
+           )
+print(all_excel_sheets$tblPastureSpecs)
+```
+
+```{r 11.2.1 write to xlsx, eval=FALSE}
+write.xlsx(
+  all_excel_sheets,
+  file.path(
+    "data",
+    "10-intermediate-right-join-dmnLivestockType-tblPastureSpecs.xlsx"
+  )
+)
+```
