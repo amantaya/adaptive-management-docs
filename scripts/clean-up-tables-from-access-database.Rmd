@@ -22,15 +22,19 @@ rm(list = ls())
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-knitr::opts_knit$set(root.dir = "~/adaptive-management-docs")
+knitr::opts_knit$set(root.dir = file.path("", "home", "rstudio", "adaptive-management-docs"))
+```
+
+```{r}
+source(file.path("scripts", "environment.R"))
 ```
 
 ```{r load all packages}
-source("scripts/packages.R")
+source(file.path("scripts", "packages.R"))
 ```
 
 ```{r load custom functions}
-source("scripts/functions.R")
+source(file.path("scripts", "functions.R"))
 ```
 
 ## 1.0 Load Data
@@ -91,9 +95,8 @@ Now that we know what the function does, we can apply it to each "Date" column i
 Note that `purrr:map()` will apply our function to every column named "Date.Entered" in our data.
 
 ```{r map clean dates function to column "Date.Entered"}
-all_excel_sheets_cleaned_date_entered <- purrr::map(all_excel_sheets_list,
-  convert_from_excel_dates_to_datetime,
-  col_name = "Date.Entered"
+all_excel_sheets_cleaned_date_entered <- 
+  purrr::map(all_excel_sheets_list, convert_from_excel_dates_to_datetime, col_name = "Date.Entered"
 )
 ```
 
@@ -164,8 +167,7 @@ all_excel_sheets_cleaned_allot_specs_table <- purrr::map(all_excel_sheets_cleane
 ```
 
 ```{r map clean dates function to column "DateEntered"}
-all_excel_sheets_cleaned_allot_specs_table <- purrr::map(all_excel_sheets_cleaned_allot_specs_table,
-  convert_from_excel_dates_to_datetime,
+all_excel_sheets_cleaned_allot_specs_table <- purrr::map(all_excel_sheets_cleaned_allot_specs_table, convert_from_excel_dates_to_datetime,
   col_name = "DateEntered"
 )
 ```
@@ -651,7 +653,7 @@ all_excel_sheets$tblPastureSpecs$PermitUnit %>% class()
 
 ## Step 11
 
-```{r}
+```{r rename "ID" to "PermitUnit" in dmnStockingUnit}
 all_excel_sheets$dmnStockingUnit <-
 all_excel_sheets$dmnStockingUnit %>% rename(PermitUnit = ID)
 ```
@@ -689,12 +691,248 @@ right_join(all_excel_sheets$dmnLivestockType,
 print(all_excel_sheets$tblPastureSpecs)
 ```
 
+```{r temp}
+all_excel_sheets$tblPastureSpecs %>% names()
+```
+
+
+docno, pasture name, livestock type, permit
+
+```{r drop "ID" and "PermitUnit" form tblPastureSpecs}
+all_excel_sheets$tblPastureSpecs <- 
+all_excel_sheets$tblPastureSpecs %>% 
+  dplyr::select(-c("ID", "PermitUnit")) %>% 
+  dplyr::rename(PermitUnit = Unit)
+print(all_excel_sheets$tblPastureSpecs)
+```
+
+```{r}
+purrr::map(all_excel_sheets, names)
+```
+
+## TODO figure out why we're its returning a NULL error message
+## TODO all if we change the "intDocNo" column rgiht here, then we will have to replace all of the intDocNo with DocNo
+
+```{r map convert column to "DocNo"}
+# purrr::map(all_excel_sheets, rename_all_docno_columns, col_name = "intDocNo")
+```
+
+```{r}
+all_excel_sheets$tblPastureSpecs <- 
+all_excel_sheets$tblPastureSpecs %>% 
+  dplyr::arrange(intDocNo) %>% 
+  dplyr::relocate(c("intDocNo", 
+                    "txtPastureName", 
+                    "LivestockType", 
+                    "PermitUnit" ),
+                  .before = 1)
+print(all_excel_sheets$tblPastureSpecs)
+```
+
 ```{r 11.2.1 write to xlsx, eval=FALSE}
 write.xlsx(
   all_excel_sheets,
   file.path(
     "data",
-    "10-intermediate-right-join-dmnLivestockType-tblPastureSpecs.xlsx"
+    "11-intermediate-rename-tblPastureSpecs.xlsx"
   )
 )
 ```
+
+## TODO one of the things I want to better understand is joins, and I'm thinking that there must be a package out there that compares what rows are kept with full joins vs left joins vs right joins vs inner joins
+
+```{r}
+all_excel_sheets$tblPastureSpecs %>% names()
+```
+
+```{r}
+all_excel_sheets$tblPastureSpecs %>% dplyr::group_by(intDocNo)
+```
+
+
+```{r}
+all_excel_sheets$tblPastureSpecs <- 
+all_excel_sheets$tblPastureSpecs %>% 
+  dplyr::group_by(intDocNo) %>% 
+  dplyr::summarize(txtPastureName = paste(txtPastureName, collapse = "; "),
+                   DateOn = paste(DateOn, collapse = "; "),
+                   DateOff = paste(DateOff, collapse = "; "),
+                   LivestockType = paste(LivestockType, collapse = "; "),
+                   PermitUnit = paste(PermitUnit, collapse = "; "),
+                   PermitNo = paste(PermitNo, collapse = "; "),
+                   Rested = paste(Rested, collapse = "; "))
+print(all_excel_sheets$tblPastureSpecs)
+```
+
+```{r temp}
+all_excel_sheets$tblPastureSpecs %>% names()
+```
+Note: we dropped the "Pasture_ID" column from "tblPastureSpecs".
+
+## TODO give some thought about how these documents fit together and could be stored inside of database
+
+```{r 11.3.1 write to xlsx, eval=FALSE}
+write.xlsx(
+  all_excel_sheets,
+  file.path(
+    "data",
+    "12-collapse-tblPastureSpecs.xlsx"
+  )
+)
+```
+
+```{r temp}
+all_excel_sheets$tblPastureSpecs %>% names()
+```
+
+```{r temp}
+all_excel_sheets$tblAllotStrategies %>% names()
+```
+```{r}
+all_excel_sheets$tblAllotStrategies <- 
+all_excel_sheets$tblAllotStrategies %>% dplyr::select(-c("ID"))
+```
+
+```{r}
+all_excel_sheets$tblDocSpecs <- 
+full_join(all_excel_sheets$tblDocSpecs,
+          all_excel_sheets$tblPastureSpecs,
+          by = c("DocNo" = "intDocNo"))
+View(all_excel_sheets$tblDocSpecs)
+```
+
+```{r 11.4.0 write to xlsx, eval=FALSE}
+write.xlsx(
+  all_excel_sheets,
+  file.path(
+    "data",
+    "13-full-join-tblPastureSpecs-tblDocSpecs.xlsx"
+  )
+)
+```
+
+```{r temp}
+all_excel_sheets$tblAllotStrategies %>% names()
+```
+
+
+### 11.5
+
+```{r}
+all_excel_sheets<- all_excel_sheets
+
+all_excel_sheets$tblDocSpecs <- 
+full_join(all_excel_sheets$tblDocSpecs,
+          all_excel_sheets$tblAllotStrategies,
+          by = "DocNo")
+print(all_excel_sheets$tblDocSpecs)
+```
+
+```{r 11.5.0 write to xlsx, eval=FALSE}
+openxlsx::write.xlsx(
+  all_excel_sheets,
+  file.path(
+    "data",
+    "14-full-join-tblAllotStrategies-tblDocSpecs.xlsx"
+  )
+)
+```
+
+### 12
+
+```{r temp}
+all_excel_sheets$tblAllotSpecs %>% names()
+```
+
+```{r temp}
+all_excel_sheets$tblAllotSpecs %>% str()
+```
+
+## TODO remeber `tibble::rowid_to_column("index")`
+
+```{r}
+compare_date_columns_tblAllotSpecs <- 
+  all_excel_sheets$tblAllotSpecs$datValidStart %in%
+  all_excel_sheets$tblAllotSpecs$datPermitStart %>% 
+  as_tibble() %>% 
+  tibble::rowid_to_column("index")
+print(compare_date_columns_tblAllotSpecs)
+```
+
+```{r}
+bad_dates_tibble <- compare_date_columns_tblAllotSpecs %>% 
+  dplyr::filter(value == FALSE)
+print(bad_dates_tibble)
+```
+
+## TODO Cameron: some of the dates wer're entered incorreclty 
+
+```{r}
+bad_dates <- bad_dates_tibble$index
+
+print(bad_dates)
+
+str(bad_dates)
+```
+
+## TODO highlight all of the date discrepancies in the `tblAllotSpecs` using the openxlsx package
+
+## TODO need explain why you changed those date values manually
+
+```{r}
+all_excel_sheets$tblAllotSpecs$datValidStart[49] <- ymd_hms("")
+```
+
+#### This is the hex value for highlight in Excel "ffff00"
+
+```{r temp}
+all_excel_sheets$tblAllotSpecs %>% names()
+```
+
+
+## TODO add an index column to each of the data frames in the list
+
+```{r}
+all_excel_sheets$tblAllotSpecs %>% 
+  as_tibble() %>% 
+  tibble::rowid_to_column("index") %>% 
+  dplyr::slice(bad_dates) %>% 
+  select(c("datValidStart", "datValidEnd", "datPermitStart", "datPermitEnd"))
+
+```
+
+```{r temp}
+all_excel_sheets$tblAllotSpecs %>% names()
+```
+
+```{r}
+compare_end_date_columns_tblAllotSpecs <- 
+  all_excel_sheets$tblAllotSpecs$datValidEnd %in%
+  all_excel_sheets$tblAllotSpecs$datPermitEnd %>% 
+  as_tibble() %>% 
+  tibble::rowid_to_column("index")
+print(compare_end_date_columns_tblAllotSpecs)
+```
+
+```{r}
+all_excel_sheets$tblAllotSpecs %>% names()
+```
+
+The `tblAllotSpecs$txtAllowedUse` was coded in a interesting way, if the AOI mentioned that within a pasture, you could graze x% percent in the upland and y% in the riparian area, then the data was coded as what ever use value higher, however this encoding does not take into account that within each pasture there are keys areas that should be grazed differently, i.e., grazed more or grazed less based on the ecological site characteristics
+
+```{r}
+
+```
+
+## TODO would it be possible to pull the Allowable Use using OCR and then a keyword filter algorithm or natural language processing?
+
+
+## TODO collapse tblAllotmentKeySpecies and join to tblDocSpecs
+
+## TODO collapse tblAdaptManDesc_doc and join to tblDocSpecs
+
+## duplicates in the tblDocSpecs collapse on DocNo, but first we need to check if the hyperlink path will match
+
+## look into what database design (MYSQL or document database like MongoDB) that we could use to hyperlink to the PDF
+
+
