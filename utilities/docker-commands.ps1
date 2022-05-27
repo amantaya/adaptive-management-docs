@@ -1,7 +1,7 @@
 # local r docker container running on port 80
 # this command disables authentication so only use it on a private network
 
-docker run -d -e DISABLE_AUTH=true --rm -p 127.0.0.1:3000:8787 -v C:/Users/andre/Dropbox/Dev/adaptive-management-docs:/home/rstudio/adaptive-management-docs amantaya/verse_adaptive_docs:4.1.3
+docker run -d -e DISABLE_AUTH=true --rm -p 8787:80 -e REDIRECT_URL=http://localhost:8787 -v C:/Users/andre/Dropbox/Dev/adaptive-management-docs:/home/rstudio/adaptive-management-docs harbor.cyverse.org/vice/rstudio/verse:latest
 
 # example docker commit command
 # first you need an example containter hash
