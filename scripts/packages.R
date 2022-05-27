@@ -1,10 +1,9 @@
 # install the `pacman` package manager
-# install.packages("pacman")
+install.packages("pacman")
 
 require("pacman")
 
 # Install and/or Load Commonly Used Packages
-p_load("renv")
 p_load("tidyverse")
 p_load("ggthemes")
 p_load("ggpubr")
@@ -20,4 +19,4 @@ p_load("openxlsx")
 p_load("hms")
 p_load("styler")
 p_load("lintr")
-p_load("openxlsx")
+
