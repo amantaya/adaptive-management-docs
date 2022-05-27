@@ -798,7 +798,7 @@ all_excel_sheets$tblDocSpecs <-
 full_join(all_excel_sheets$tblDocSpecs,
           all_excel_sheets$tblPastureSpecs,
           by = c("DocNo" = "intDocNo"))
-View(all_excel_sheets$tblDocSpecs)
+# View(all_excel_sheets$tblDocSpecs)
 ```
 
 ```{r 11.4.0 write to xlsx, eval=FALSE}
@@ -865,7 +865,7 @@ bad_dates_tibble <- compare_date_columns_tblAllotSpecs %>%
 print(bad_dates_tibble)
 ```
 
-## TODO Cameron: some of the dates wer're entered incorreclty 
+## TODO Cameron: some of the dates were entered incorrectly and will fix manually
 
 ```{r}
 bad_dates <- bad_dates_tibble$index
@@ -880,7 +880,7 @@ str(bad_dates)
 ## TODO need explain why you changed those date values manually
 
 ```{r}
-all_excel_sheets$tblAllotSpecs$datValidStart[49] <- ymd_hms("")
+all_excel_sheets$tblAllotSpecs$datValidStart[49] <- lubridate::ymd_hms("")
 ```
 
 #### This is the hex value for highlight in Excel "ffff00"
@@ -921,11 +921,17 @@ all_excel_sheets$tblAllotSpecs %>% names()
 The `tblAllotSpecs$txtAllowedUse` was coded in a interesting way, if the AOI mentioned that within a pasture, you could graze x% percent in the upland and y% in the riparian area, then the data was coded as what ever use value higher, however this encoding does not take into account that within each pasture there are keys areas that should be grazed differently, i.e., grazed more or grazed less based on the ecological site characteristics
 
 ```{r}
-
+# View(all_excel_sheets$tblDocSpecs)
 ```
+
+```{r}
+View(all_excel_sheets$tblAllotSpecs)
+```
+
 
 ## TODO would it be possible to pull the Allowable Use using OCR and then a keyword filter algorithm or natural language processing?
 
+## TODO there are bad unparsed dates in tblAllotSpecs
 
 ## TODO collapse tblAllotmentKeySpecies and join to tblDocSpecs
 
@@ -934,5 +940,297 @@ The `tblAllotSpecs$txtAllowedUse` was coded in a interesting way, if the AOI men
 ## duplicates in the tblDocSpecs collapse on DocNo, but first we need to check if the hyperlink path will match
 
 ## look into what database design (MYSQL or document database like MongoDB) that we could use to hyperlink to the PDF
+
+```{r}
+all_excel_sheets$tblAllotSpecs %>% dlookr::diagnose()
+```
+
+```{r temp}
+all_excel_sheets$tblAllotSpecs %>% names()
+```
+
+```{r}
+lubridate::ymd_hms("1995-01-01T00:00:00")
+```
+
+```{r}
+# vector[1] < lubridate::ymd_hms("1995-01-01T00:00:00", tz = "MST")
+```
+
+## TODO create a function that checks valid start and end dates
+## valid start: anytime after 1995-01-01T00:00:00
+## valid end: anytime before 2019-01-01T00:00:00
+
+```{r eval=FALSE}
+# vector <- all_excel_sheets$tblAllotSpecs %>% pull(datPermitStart)
+# 
+# for (i in (1:length(vector))) {
+#   print(vector[i] < lubridate::ymd_hms("1995-01-01T00:00:00", tz = "MST")) |
+#     
+# }
+```
+
+```{r}
+# check_if_date_range_is_valid <- function(date_column){
+#   if date_column[i] < lubridate::ymd_hms("1995-01-01T00:00:00")
+# }
+```
+
+```{r}
+all_excel_sheets$tblAllotSpecs %>% dlookr::diagnose()
+```
+
+```{r temp}
+all_excel_sheets$tblAllotSpecs %>% names()
+```
+
+```{r}
+all_excel_sheets$tblAllotSpecs <- 
+all_excel_sheets$tblAllotSpecs %>% 
+  dplyr::select(-c("AllotSpec_ID", "DateEntered")) %>% 
+  dplyr::distinct()
+```
+
+intDocNo numbers 371 and 372 and messed up. Drop the NA from 372, and keep the 372 that has the correct date.
+
+```{r here}
+all_excel_sheets$tblAllotSpecs <- 
+  all_excel_sheets$tblAllotSpecs %>% tidyr::drop_na(txtAllotName)
+```
+
+```{r}
+all_excel_sheets$tblAllotSpecs %>% names()
+```
+
+```{r}
+cleaned_392_allotspecs <- 
+all_excel_sheets$tblAllotSpecs %>% 
+  dplyr::filter(intDocNo == "392") %>% 
+  dplyr::filter(datPermitStart == lubridate::ymd("1996-05-05") & 
+                datPermitEnd == lubridate::ymd("1996-10-11")
+                )
+all_excel_sheets$tblAllotSpecs <- 
+all_excel_sheets$tblAllotSpecs %>% 
+  dplyr::filter(intDocNo != "392") %>% 
+  dplyr::add_row(cleaned_392_allotspecs) %>% 
+  dplyr::arrange(intDocNo)
+
+View(all_excel_sheets$tblAllotSpecs)
+```
+
+```{r}
+all_excel_sheets$tblAllotSpecs <- 
+all_excel_sheets$tblAllotSpecs %>% 
+  group_by(intDocNo) %>% 
+  summarise(txtAllotName = paste(txtAllotName, collapse = "; "),
+            datPermitStart = paste(datPermitStart, collapse = "; "),
+            datPermitEnd = paste(datPermitEnd, collapse = "; "),
+            txtAllowedUse = paste(txtAllowedUse, collapse = "; "))
+View(all_excel_sheets$tblAllotSpecs)
+```
+
+```{r}
+all_excel_sheets$tblAllotSpecs %>% dlookr::diagnose()
+```
+
+```{r}
+all_excel_sheets$tblDocSpecs <- 
+  dplyr::full_join(all_excel_sheets$tblAllotSpecs, 
+                  all_excel_sheets$tblDocSpecs, 
+                  by = c("intDocNo" = "DocNo")
+                  )
+```
+
+```{r}
+View(all_excel_sheets$tblDocSpecs)
+```
+
+```{r}
+write.xlsx(all_excel_sheets, 
+           file = file.path("data", "15-full-join-tblAllotSpecs-tblDocSpecs.xlsx"))
+```
+
+## 
+
+```{r}
+all_excel_sheets$tblAllotmentKeySpecies %>% names()
+```
+
+```{r}
+all_excel_sheets$tblAllotmentKeySpecies$txtAllotKeySpecies <- 
+all_excel_sheets$tblAllotmentKeySpecies$txtAllotKeySpecies %>% stringr::str_trim()
+```
+
+add nones to the blank key species
+
+```{r}
+all_excel_sheets$tblAllotmentKeySpecies %>% dlookr::diagnose()
+```
+
+```{r}
+View(all_excel_sheets$tblAllotmentKeySpecies)
+```
+
+```{r}
+all_excel_sheets$tblAllotmentKeySpecies <- 
+all_excel_sheets$tblAllotmentKeySpecies %>% 
+  tidyr::replace_na(replace = list(txtAllotKeySpecies = "None"))
+```
+
+```{r}
+View(all_excel_sheets$tblAllotmentKeySpecies)
+```
+
+## TODO it might be interesting to figure out which document numbers are missing from the tblDocSpecs
+
+```{r}
+all_excel_sheets$tblAllotmentKeySpecies %>% dlookr::diagnose()
+```
+
+```{r}
+all_excel_sheets$tblAllotmentKeySpecies <- 
+all_excel_sheets$tblAllotmentKeySpecies %>% 
+  dplyr::select(c("intDocNo", "txtAllotKeySpecies")) %>% 
+  dplyr::distinct()
+```
+
+```{r}
+all_excel_sheets$tblAllotmentKeySpecies %>% dlookr::diagnose()
+```
+
+
+```{r}
+all_excel_sheets$tblAllotmentKeySpecies <- 
+all_excel_sheets$tblAllotmentKeySpecies %>% 
+  group_by(intDocNo) %>%
+  summarise(intDocNo = intDocNo[1],
+            txtAllotKeySpecies = paste(txtAllotKeySpecies, collapse = "; ")
+            )
+View(all_excel_sheets$tblAllotmentKeySpecies)
+```
+
+```{r}
+all_excel_sheets$tblDocSpecs <- 
+  dplyr::full_join(all_excel_sheets$tblAllotmentKeySpecies,
+                   all_excel_sheets$tblDocSpecs,
+                   by = "intDocNo")
+
+all_excel_sheets$tblDocSpecs %>% View()
+```
+
+```{r}
+write.xlsx(all_excel_sheets, 
+           file = file.path("data",
+                            "16-full-join-tblAllotmentKeySpecies-tblDocSpecs.xlsx"))
+```
+
+##
+
+```{r}
+all_excel_sheets$tblAdaptManDesc_doc %>% names()
+```
+
+```{r}
+all_excel_sheets$tblAdaptManDesc_doc %>% dlookr::diagnose()
+```
+
+```{r}
+all_excel_sheets$tblAdaptManDesc_doc$AdaptManDesc %>% unique()
+```
+
+```{r}
+all_excel_sheets$tblAdaptManDesc_doc$AdaptManDesc <- 
+all_excel_sheets$tblAdaptManDesc_doc$AdaptManDesc %>% stringr::str_trim()
+```
+
+```{r}
+all_excel_sheets$tblAdaptManDesc_doc$AdaptManDesc %>% unique()
+```
+
+```{r}
+all_excel_sheets$tblAdaptManDesc_doc$AdaptManDesc <- 
+all_excel_sheets$tblAdaptManDesc_doc$AdaptManDesc %>% 
+stringr::str_replace(pattern = "Trial/Error, Flexible Use, Learning and Monitoringr",
+            replace = "Trial/Error, Flexible Use, Learning and Monitoring")
+```
+
+```{r}
+all_excel_sheets$tblAdaptManDesc_doc$AdaptManDesc %>% unique()
+```
+
+```{r}
+all_excel_sheets$tblAdaptManDesc_doc %>% View()
+```
+
+```{r}
+all_excel_sheets$tblAdaptManDesc_doc$AdaptManDesc <- 
+all_excel_sheets$tblAdaptManDesc_doc$AdaptManDesc %>% 
+stringr::str_replace(pattern = "Trial/Error, Flexible Use, Learning and Monitoring",
+            replace = "Trial/Error; Flexible Use; Learning and Monitoring")
+```
+
+```{r}
+all_excel_sheets$tblAdaptManDesc_doc$AdaptManDesc %>% unique()
+```
+
+```{r}
+all_excel_sheets$tblAdaptManDesc_doc %>% dplyr::group_by(AdaptManDesc) %>% dplyr::count()
+```
+
+```{r}
+all_excel_sheets$tblAdaptManDesc_doc$AdaptManDesc <- 
+all_excel_sheets$tblAdaptManDesc_doc$AdaptManDesc %>% 
+stringr::str_replace(pattern = "None",
+            replace = "No AM Present")
+```
+
+```{r}
+all_excel_sheets$tblAdaptManDesc_doc %>% dplyr::group_by(AdaptManDesc) %>% dplyr::count()
+```
+
+```{r}
+all_excel_sheets$tblAdaptManDesc_doc %>% View()
+```
+
+```{r}
+all_excel_sheets$tblAdaptManDesc_doc %>% names()
+```
+
+```{r}
+all_excel_sheets$tblAdaptManDesc_doc <- 
+all_excel_sheets$tblAdaptManDesc_doc %>% 
+  dplyr::select(c("DocNo", "AdaptManDesc")) %>% 
+  dplyr::distinct()
+View(all_excel_sheets$tblAdaptManDesc_doc)
+```
+
+```{r}
+all_excel_sheets$tblAdaptManDesc_doc <- 
+all_excel_sheets$tblAdaptManDesc_doc %>% 
+  dplyr::group_by(DocNo) %>% 
+  summarise(DocNo = DocNo,
+            AdaptManDesc = paste(AdaptManDesc, collapse = "; ")
+            )
+View(all_excel_sheets$tblAdaptManDesc_doc)
+```
+
+```{r}
+all_excel_sheets$tblAdaptManDesc_doc %>% dplyr::group_by(AdaptManDesc) %>% dplyr::count()
+```
+
+```{r}
+all_excel_sheets$tblAdaptManDesc_doc$AdaptManDesc %>% unique()
+```
+
+```{r}
+all_excel_sheets$tblAdaptManDesc_doc$AdaptManDesc <- 
+all_excel_sheets$tblAdaptManDesc_doc$AdaptManDesc %>% 
+stringr::str_replace(pattern = "Flexible Use; No AM Present",
+                     replace = "No AM Present; Flexible Use")
+```
+
+```{r}
+all_excel_sheets$tblAdaptManDesc_doc %>% dplyr::group_by(AdaptManDesc) %>% dplyr::count()
+```
 
 
