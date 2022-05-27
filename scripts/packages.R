@@ -1,5 +1,5 @@
 # install the `pacman` package manager
-install.packages("pacman")
+# install.packages("pacman")
 
 require("pacman")
 
@@ -19,4 +19,5 @@ p_load("openxlsx")
 p_load("hms")
 p_load("styler")
 p_load("lintr")
-
+p_load("dlookr")
+p_load("lubridate")
