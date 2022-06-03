@@ -17,7 +17,7 @@ __The purpose of this Rmarkdown document is to clean up an Access database conta
 Remove all of the objects from the R environment to start fresh every time.
 
 ```{r remove objects}
-rm(list = ls())
+# rm(list = ls())
 ```
 
 ```{r setup, include=FALSE}
@@ -25,22 +25,23 @@ knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_knit$set(root.dir = file.path("", "home", "rstudio", "adaptive-management-docs"))
 ```
 
-```{r}
+```{r load environment.R}
 source(file.path("scripts", "environment.R"))
 ```
 
 ```{r load all packages}
-source(file.path("scripts", "packages.R"))
+source(file.path(currentwd, "scripts", "packages.R"))
 ```
 
 ```{r load custom functions}
-source(file.path("scripts", "functions.R"))
+source(file.path(currentwd, "scripts", "functions.R"))
 ```
 
 ## 1.0 Load Data
 
 ```{r add file path}
-path_to_excel_file <- file.path("data", "adaptive_management_documents_asessment_export_all_tables_from_access.xlsx")
+path_to_excel_file <- file.path(currentwd,
+                                "data", "adaptive_management_documents_asessment_export_all_tables_from_access.xlsx")
 
 print(path_to_excel_file)
 ```
@@ -1120,7 +1121,8 @@ all_excel_sheets$tblDocSpecs %>% View()
 
 ```{r}
 write.xlsx(all_excel_sheets, 
-           file = file.path("data",
+           file = file.path(currentwd,
+                            "data",
                             "16-full-join-tblAllotmentKeySpecies-tblDocSpecs.xlsx"))
 ```
 
@@ -1233,4 +1235,132 @@ stringr::str_replace(pattern = "Flexible Use; No AM Present",
 all_excel_sheets$tblAdaptManDesc_doc %>% dplyr::group_by(AdaptManDesc) %>% dplyr::count()
 ```
 
+```{r}
+AdatManDesc_duplicate_variables <- all_excel_sheets$tblAdaptManDesc_doc %>% 
+  dplyr::group_by(AdaptManDesc) %>% 
+  dplyr::count()
+```
+
+```{r}
+print(AdatManDesc_duplicate_variables)
+```
+
+
+```{r eval=FALSE, include=FALSE}
+openxlsx::write.xlsx(AdatManDesc_duplicate_variables, 
+                     file = file.path(currentwd, "data", "17-AdaptManDesc-duplicate-variables.xlsx")
+                     )
+```
+
+### Read in Step 16
+
+```{r}
+
+# path_to_excel_file <- file.path(currentwd, "data", "16-full-join-tblAllotmentKeySpecies-tblDocSpecs.xlsx")
+# 
+# sheet_names <- openxlsx::getSheetNames(path_to_excel_file)
+# 
+# all_excel_sheets <- lapply(sheet_names, openxlsx::read.xlsx, xlsxFile = path_to_excel_file)
+# 
+# names(all_excel_sheets_list) <- sheet_names
+```
+
+```{r}
+all_excel_sheets$tblAdaptManDesc_doc$AdaptManDesc <- 
+all_excel_sheets$tblAdaptManDesc_doc$AdaptManDesc %>%
+stringr::str_replace_all(pattern = "Best Practices; Flexible Use; Learning and Monitoring",
+                         replacement = "Best Practices; Learning and Monitoring; Flexible Use")
+```
+
+```{r}
+all_excel_sheets$tblAdaptManDesc_doc %>% 
+  dplyr::group_by(AdaptManDesc) %>% 
+  dplyr::count()
+```
+
+
+```{r}
+all_excel_sheets$tblAdaptManDesc_doc$AdaptManDesc <- 
+all_excel_sheets$tblAdaptManDesc_doc$AdaptManDesc %>%
+stringr::str_replace_all(pattern = "Trial/Error; Flexible Use; Learning and Monitoring",
+                         replacement = "Flexible Use; Learning and Monitoring; Trial/Error")
+```
+
+```{r}
+all_excel_sheets$tblAdaptManDesc_doc %>% 
+  dplyr::group_by(AdaptManDesc) %>% 
+  dplyr::count()
+```
+
+```{r}
+all_excel_sheets$tblAdaptManDesc_doc$AdaptManDesc <- 
+all_excel_sheets$tblAdaptManDesc_doc$AdaptManDesc %>%
+stringr::str_replace_all(pattern = "Trial/Error; Flexible Use",
+                         replacement = "Flexible Use; Trial/Error")
+```
+
+```{r}
+all_excel_sheets$tblAdaptManDesc_doc %>% 
+  dplyr::group_by(AdaptManDesc) %>% 
+  dplyr::count()
+```
+
+```{r}
+all_excel_sheets$tblAdaptManDesc_doc$AdaptManDesc <- 
+all_excel_sheets$tblAdaptManDesc_doc$AdaptManDesc %>%
+stringr::str_replace_all(pattern = "Learning and Monitoring; Trial/Error; Flexible Use",
+                         replacement = "Learning and Monitoring; Flexible Use; Trial/Error")
+```
+
+```{r}
+all_excel_sheets$tblAdaptManDesc_doc %>% 
+  dplyr::group_by(AdaptManDesc) %>% 
+  dplyr::count()
+```
+
+```{r}
+all_excel_sheets$tblAdaptManDesc_doc$AdaptManDesc <- 
+all_excel_sheets$tblAdaptManDesc_doc$AdaptManDesc %>%
+stringr::str_replace_all(pattern = "Triggers; Flexible Use",
+                         replacement = "Flexible Use; Triggers")
+```
+
+```{r}
+all_excel_sheets$tblAdaptManDesc_doc %>% 
+  dplyr::group_by(AdaptManDesc) %>% 
+  dplyr::count()
+```
+
+```{r eval=FALSE, include=FALSE}
+openxlsx::write.xlsx(all_excel_sheets, 
+                     file = file.path(currentwd, "data", "18-AdaptManDesc-cleaned-duplicate-variables.xlsx")
+                     )
+```
+
+```{r}
+AdatManDesc_cleaned_variables <- all_excel_sheets$tblAdaptManDesc_doc %>% 
+  dplyr::group_by(AdaptManDesc) %>% 
+  dplyr::count()
+```
+
+```{r eval=FALSE, include=FALSE}
+openxlsx::write.xlsx(AdatManDesc_cleaned_variables, 
+                     file = file.path(currentwd, "data", "19-AdaptManDesc-cleaned-summarized-variables.xlsx")
+                     )
+```
+
+### Step 20
+
+```{r}
+all_excel_sheets$tblDocSpecs <- 
+dplyr::full_join(all_excel_sheets$tblDocSpecs,
+  all_excel_sheets$tblAdaptManDesc_doc,
+  by = c("intDocNo" = "DocNo"))
+```
+
+```{r}
+openxlsx::write.xlsx(all_excel_sheets, 
+                     file = file.path(currentwd, "data", "20-full-join-tblDocSpecs-tblAdaptManDesc.xlsx")
+                     )
+```
 
